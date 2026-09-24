@@ -10,7 +10,7 @@ Everything runs on a laptop. The full benchmark (tuning, 18 model variants, 2,18
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/lead_time_dark.png">
-  <img alt="Forecast error at every lead time from 15 minutes to 4 hours, for past power only and for past power plus future wind" src="docs/figures/lead_time_light.png">
+  <img alt="How much lower each model's error is than persistence, from 15 minutes to 4 hours ahead: all models stay within a few percent of persistence on past power alone, and reach 17 to 24 percent better at 4 hours with a wind forecast" src="docs/figures/lead_time_light.png">
 </picture>
 
 ## Key findings

@@ -72,28 +72,45 @@ def save(fig, name, theme):
 
 
 def lead_time(m, th, theme):
-    """nMAE at every step, setup A next to setup B."""
-    fig, (a, b) = new_fig(th, 11, 4.2, ncols=2, sharey=True)
+    """How much each model beats persistence at every lead time, with and without a wind forecast."""
+    fig, (ax,) = new_fig(th, 9, 4.8)
     steps = np.arange(1, 17)
-    get = lambda model: m[(m.model == model) & (m.step > 0)].sort_values("step")["nMAE"].to_numpy()  # noqa: E731
-    for ax, suffix, title in [(a, "", "A: past power only"), (b, FUT_SUFFIX, "B: past power and future wind")]:
-        labels = []
-        for fid, lab, key in FAMILIES:
-            y = get(fid + suffix)
-            ax.plot(steps, y, color=th[key], linewidth=2, solid_capstyle="round")
-            labels.append((lab, y[-1], th[key]))
-        base, blab, bkey, dash = (("persistence", "Persistence", "pers", (0, (1, 3))) if not suffix
-                                  else ("power-curve", "Power curve", "curve", (0, (6, 2, 1, 2))))
-        y = get(base)
-        ax.plot(steps, y, color=th[bkey], linewidth=1.8, linestyle=dash)
-        labels.append((blab, y[-1], th[bkey]))
-        end_labels(ax, labels, th, 16)
-        ax.set_title(title, loc="left", fontsize=11, color=th["ink"], fontweight="bold", pad=10)
-        ax.set_xticks(STEP_TICKS, STEP_LABELS)
-        ax.set_xlim(1, 16)
-        ax.set_xlabel("lead time", color=th["muted"], fontsize=9)
-    a.set_ylabel("nMAE, % of capacity", color=th["muted"], fontsize=9)
-    fig.subplots_adjust(wspace=0.45)
+    skill = lambda model: m[(m.model == model) & (m.step > 0)].sort_values("step")["skill_nMAE"].to_numpy()  # noqa: E731
+    lo_y, hi_y = -8, 27
+    # setup A: the models are statistically indistinguishable, so show their range as one band
+    a = np.stack([skill(fid) for fid, _, _ in FAMILIES])
+    ax.fill_between(steps, a.min(0), a.max(0), color=th["muted"], alpha=0.22, linewidth=0)
+    ax.text(4.3, a.max(0)[3] + 0.8, "all five models, past power only", fontsize=8.5, color=th["muted"])
+    labels = []
+    for fid, lab, key in FAMILIES:
+        y = skill(fid + FUT_SUFFIX)
+        ax.plot(steps, y, color=th[key], linewidth=2.2, solid_capstyle="round")
+        labels.append((f"{lab}  {y[-1]:.0f}%", y[-1], th[key]))
+    pc = skill("power-curve")
+    ax.plot(steps, np.maximum(pc, lo_y - 5), color=th["curve"], linewidth=1.8, linestyle=(0, (6, 2, 1, 2)))
+    labels.append((f"Power curve  {pc[-1]:.0f}%", pc[-1], th["curve"]))
+    ax.axhline(0, color=th["pers"], linewidth=1.5, linestyle=(0, (1, 3)))
+    ax.text(3.4, -0.9, "persistence: repeat the last value", fontsize=8.5, color=th["muted"], va="top")
+    ax.set_ylim(lo_y, hi_y)
+    ax.set_yticks(np.arange(-5, hi_y, 5))
+    end_labels(ax, labels, th, 16, gap_frac=0.055)
+    ax.annotate("power curve:\nwind only, no recent power", xy=(10.5, pc[9]), xytext=(11.2, -5.4), fontsize=8,
+                color=th["muted"], va="center",
+                arrowprops=dict(arrowstyle="-", color=th["muted"], linewidth=0.8))
+    ax.set_xticks(STEP_TICKS, STEP_LABELS)
+    ax.set_xlim(1, 16)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:+.0f}%" if v else "0%"))
+    ax.set_xlabel("how far ahead the forecast is", color=th["muted"], fontsize=9)
+    ax.set_ylabel("how much lower the error is than persistence", color=th["muted"], fontsize=9)
+    finals = [skill(fid + FUT_SUFFIX)[-1] for fid, _, _ in FAMILIES]
+    fig.text(ax.get_position().x0, 0.99,
+             f"Past power alone barely beats persistence; a wind forecast adds "
+             f"{min(finals):.0f} to {max(finals):.0f}% at 4 hours",
+             fontsize=11, color=th["ink"], fontweight="bold", va="top")
+    fig.text(ax.get_position().x0, 0.93, "Coloured lines: each model with the wind speed for the next 4 hours. "
+             "Grey band: the range of all five models without it. Higher is better.",
+             fontsize=9, color=th["muted"], va="top")
+    fig.subplots_adjust(top=0.85)
     save(fig, "lead_time", theme)
 
 
