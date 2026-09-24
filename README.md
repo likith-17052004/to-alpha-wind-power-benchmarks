@@ -1,65 +1,79 @@
 # WindBench
 
-**Can time series foundation models replace a wind farm's real time power forecast?**
+A benchmark of time series foundation models for short term wind power forecasting on a real wind farm.
 
-WindBench compares four zero shot time series foundation models (t0-alpha, t0-beta, Chronos-2 and TimesFM 3.0) with a gradient boosted model trained on the plant's own history (XGBoost) and two simple baselines, on a real wind farm, run the way Indian real time scheduling works: every 4 hours, forecast the next 16 blocks of 15 minutes.
+Four foundation models (t0-alpha, t0-beta, Chronos-2 and TimesFM 3.0), used zero shot, are compared with an XGBoost model trained on the plant's own history and with two simple baselines. Every 4 hours each model forecasts the next 16 blocks of 15 minutes, the schedule used for real time wind scheduling in India.
 
-Everything runs on a laptop. The full benchmark (tuning, 18 model variants, 2,189 forecast runs each) takes about an hour on an Apple M5.
+**Interactive report:** [likith-17052004.github.io/to-alpha-wind-power-benchmarks](https://likith-17052004.github.io/to-alpha-wind-power-benchmarks/)
 
-**Interactive report:** [likith-17052004.github.io/to-alpha-wind-power-benchmarks](https://likith-17052004.github.io/to-alpha-wind-power-benchmarks/) (or open [`docs/index.html`](docs/index.html) locally) with every metric, a lead time explorer, pairwise significance tests and a day of real time runs.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/lead_time_dark.png">
-  <img alt="How much lower each model's error is than persistence, from 15 minutes to 4 hours ahead: all models stay within a few percent of persistence on past power alone, and reach 17 to 24 percent better at 4 hours with a wind forecast" src="docs/figures/lead_time_light.png">
-</picture>
-
-## Key findings
-
-1. **With past power alone, nothing meaningfully beats persistence.** Every model, foundation or trained, improves on holding the last value flat by only 2.6 to 4.3 percent, and within that group most differences are not statistically significant.
-2. **Knowing the wind over the next 4 hours is what matters.** Adding it cuts every model's error by 0.55 to 0.97 percentage points of capacity, and the gain grows with lead time.
-3. **Zero shot foundation models match a model trained on the plant.** With future wind, TimesFM 3.0 is the most accurate model (5.80% nMAE). t0-beta comes second (5.98%), level with XGBoost trained on the plant (6.00%) and significantly better than its predecessor t0-alpha (6.09%).
-4. **t0-beta is the most robust deployable model.** With a realistic, noisy wind forecast it keeps 75% of its wind gain (6.19%), ahead of XGBoost (6.30%) and Chronos-2 (6.31%), while t0-alpha keeps only about half (6.44%). It also fixes t0-alpha's weaker first step: 2.63% at 15 minutes against 2.81%.
-5. **None of them is ready to replace an operational forecast as is.** The best models still miss by about 7.3% of capacity on average at 4 hours ahead, and large errors come from real weather ramps that no model anticipates.
-
-## Results
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/wind_gain_dark.png">
-  <img alt="Share of each model's error removed by a wind forecast, from 15 minutes to 4 hours ahead: near zero at 15 minutes, 11 to 20 percent at 4 hours" src="docs/figures/wind_gain_light.png">
-</picture>
-
-ENGIE La Haute Borne wind farm (4 turbines, 8.2 MW), test year 2015, one run every 4 hours, 2,189 runs per model. nMAE is the mean absolute error of the median forecast as a percentage of installed capacity; skill is the reduction in that error versus persistence.
+## Setup
 
 <table>
-  <thead>
-    <tr><th>Setup</th><th>Model</th><th>nMAE %</th><th>Skill vs persistence</th><th>nMAE at 15 min</th><th>nMAE at 4 h</th><th>ms per run</th></tr>
-  </thead>
   <tbody>
-    <tr><td rowspan="6">B: past power and future wind</td><td>TimesFM 3.0 (zero shot)</td><td><b>5.80</b></td><td><b>17.7%</b></td><td><b>2.63</b></td><td>7.37</td><td>34</td></tr>
-    <tr><td>t0-beta (zero shot)</td><td>5.98</td><td>15.1%</td><td><b>2.63</b></td><td>7.48</td><td>104</td></tr>
-    <tr><td>XGBoost (trained on the plant)</td><td>6.00</td><td>14.8%</td><td>2.87</td><td><b>7.31</b></td><td>8</td></tr>
-    <tr><td>t0-alpha (zero shot)</td><td>6.09</td><td>13.6%</td><td>2.81</td><td>7.68</td><td>96</td></tr>
-    <tr><td>Chronos-2 (zero shot)</td><td>6.19</td><td>12.1%</td><td>2.75</td><td>8.02</td><td>41</td></tr>
-    <tr><td>Power curve (baseline)</td><td>7.70</td><td>minus 9.2%</td><td>7.52</td><td>7.59</td><td>0</td></tr>
-    <tr><td rowspan="6">A: past power only</td><td>Chronos-2 (zero shot)</td><td><b>6.75</b></td><td><b>4.3%</b></td><td>2.78</td><td><b>9.03</b></td><td>44</td></tr>
-    <tr><td>TimesFM 3.0 (zero shot)</td><td>6.77</td><td>3.9%</td><td><b>2.68</b></td><td>9.06</td><td>90</td></tr>
-    <tr><td>t0-alpha (zero shot)</td><td>6.81</td><td>3.4%</td><td>2.72</td><td>9.10</td><td>25</td></tr>
-    <tr><td>t0-beta (zero shot)</td><td>6.82</td><td>3.3%</td><td>2.67</td><td>9.21</td><td>77</td></tr>
-    <tr><td>XGBoost (trained on the plant)</td><td>6.87</td><td>2.6%</td><td>2.84</td><td>9.10</td><td>7</td></tr>
-    <tr><td>Persistence (baseline)</td><td>7.05</td><td>0%</td><td>2.72</td><td>9.62</td><td>0</td></tr>
+    <tr><td><b>Wind farm</b></td><td>ENGIE La Haute Borne, France: 4 turbines, 8.2 MW</td></tr>
+    <tr><td><b>Test period</b></td><td>2015, one forecast every 4 hours (2,189 forecasts per model)</td></tr>
+    <tr><td><b>Forecast</b></td><td>the next 16 blocks of 15 minutes, from 15 minutes to 4 hours ahead</td></tr>
+    <tr><td><b>Setup A</b></td><td>the model sees the plant's past power output only</td></tr>
+    <tr><td><b>Setup B</b></td><td>past power output plus the wind speed for the next 4 hours (ERA5, standing in for a wind forecast)</td></tr>
+    <tr><td><b>Metric</b></td><td>nMAE: mean absolute error as a percentage of installed capacity (lower is better)</td></tr>
+    <tr><td><b>Baselines</b></td><td>persistence (repeat the last measured value) and a power curve (wind speed converted to power)</td></tr>
   </tbody>
 </table>
 
-**With a realistic wind forecast** (setup B with the wind degraded by timing, level and drift errors):
+## Results
+
+### Overall accuracy
+
+<table>
+  <thead>
+    <tr><th>Setup</th><th>Model</th><th>nMAE %</th><th>Improvement over persistence</th><th>nMAE at 15 min</th><th>nMAE at 4 h</th><th>ms per forecast</th></tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="6">B: past power and future wind</td><td>TimesFM 3.0</td><td><b>5.80</b></td><td><b>17.7%</b></td><td><b>2.63</b></td><td>7.37</td><td>34</td></tr>
+    <tr><td>t0-beta</td><td>5.98</td><td>15.1%</td><td><b>2.63</b></td><td>7.48</td><td>104</td></tr>
+    <tr><td>XGBoost (trained on the plant)</td><td>6.00</td><td>14.8%</td><td>2.87</td><td><b>7.31</b></td><td>8</td></tr>
+    <tr><td>t0-alpha</td><td>6.09</td><td>13.6%</td><td>2.81</td><td>7.68</td><td>96</td></tr>
+    <tr><td>Chronos-2</td><td>6.19</td><td>12.1%</td><td>2.75</td><td>8.02</td><td>41</td></tr>
+    <tr><td>Power curve</td><td>7.70</td><td>minus 9.2%</td><td>7.52</td><td>7.59</td><td>0</td></tr>
+    <tr><td rowspan="6">A: past power only</td><td>Chronos-2</td><td><b>6.75</b></td><td><b>4.3%</b></td><td>2.78</td><td><b>9.03</b></td><td>44</td></tr>
+    <tr><td>TimesFM 3.0</td><td>6.77</td><td>3.9%</td><td><b>2.68</b></td><td>9.06</td><td>90</td></tr>
+    <tr><td>t0-alpha</td><td>6.81</td><td>3.4%</td><td>2.72</td><td>9.10</td><td>25</td></tr>
+    <tr><td>t0-beta</td><td>6.82</td><td>3.3%</td><td>2.67</td><td>9.21</td><td>77</td></tr>
+    <tr><td>XGBoost (trained on the plant)</td><td>6.87</td><td>2.6%</td><td>2.84</td><td>9.10</td><td>7</td></tr>
+    <tr><td>Persistence</td><td>7.05</td><td>0%</td><td>2.72</td><td>9.62</td><td>0</td></tr>
+  </tbody>
+</table>
+
+### Accuracy by lead time
+
+Improvement over persistence at each lead time. Coloured lines are setup B; the grey band is the range of all models in setup A.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/lead_time_dark.png">
+  <img alt="Improvement over persistence from 15 minutes to 4 hours ahead, per model with the wind forecast, and the range of all models without it" src="docs/figures/lead_time_light.png">
+</picture>
+
+### Effect of the wind forecast
+
+How much of each model's error the wind forecast removes, comparing setup B with setup A for the same model.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/figures/wind_gain_dark.png">
+  <img alt="Error reduction from the wind forecast per model, from 15 minutes to 4 hours ahead" src="docs/figures/wind_gain_light.png">
+</picture>
+
+### With a realistic wind forecast
+
+ERA5 is closer to the truth than a real forecast, so setup B was repeated with the wind degraded by timing, level and drift errors.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/noisy_wind_dark.png">
-  <img alt="Error of each model with no wind, a noisy wind forecast and ERA5 wind" src="docs/figures/noisy_wind_light.png">
+  <img alt="nMAE per model with no wind, a noisy wind forecast and ERA5 wind" src="docs/figures/noisy_wind_light.png">
 </picture>
 
 <table>
   <thead>
-    <tr><th>Model</th><th>A: no wind</th><th>B: noisy wind</th><th>B: ERA5 wind</th><th>Share of the wind gain kept</th></tr>
+    <tr><th>Model</th><th>No wind</th><th>Noisy wind</th><th>ERA5 wind</th><th>Wind benefit kept</th></tr>
   </thead>
   <tbody>
     <tr><td>TimesFM 3.0</td><td>6.77</td><td><b>6.08</b></td><td>5.80</td><td>72%</td></tr>
@@ -70,50 +84,51 @@ ENGIE La Haute Borne wind farm (4 turbines, 8.2 MW), test year 2015, one run eve
   </tbody>
 </table>
 
-**What a real time run looks like.** Each 4 hourly run of t0-alpha (top) and t0-beta (bottom) with future wind starts from the last measured block (open circle) and forecasts the next 4 hours with an 80% band. On this day t0-beta follows the morning ramp that t0-alpha misses (13.4% against 15.4% nMAE for the day), but both miss the sharpest drops.
+### Example day
+
+The six forecasts of 1 April 2015 for t0-alpha and t0-beta in setup B. Each forecast starts from the last measured value (open circle).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/example_day_dark.png">
-  <img alt="Six consecutive 4 hourly runs of t0-alpha and t0-beta over the actual output on 1 April 2015" src="docs/figures/example_day_light.png">
+  <img alt="Six consecutive forecasts of t0-alpha and t0-beta over the actual output on 1 April 2015" src="docs/figures/example_day_light.png">
 </picture>
 
-Excluding the 4.4% of blocks affected by turbine outages or curtailment lowers every error by about 0.04 points and leaves the ranking unchanged. The interactive report adds error at every step from 15 minutes to 4 hours, a pairwise significance matrix, the tuning choices and a day of real time runs.
+## Key findings
 
-## How the benchmark works
+1. **Past power alone is not enough.** In setup A every model is only 2.6 to 4.3% better than persistence, and the differences between models are mostly not statistically significant.
+2. **The wind forecast makes the difference.** It has almost no effect at 15 minutes but removes 11 to 20% of each model's error at 4 hours.
+3. **Zero shot models match a model trained on the plant.** In setup B, TimesFM 3.0 is the most accurate (5.80%). t0-beta (5.98%) and XGBoost (6.00%) are level, and t0-beta is significantly better than t0-alpha (6.09%).
+4. **t0-beta holds up best among the commercially usable models.** With the noisy wind forecast it reaches 6.19%, against 6.30% for XGBoost and 6.31% for Chronos-2.
+5. **None of them is ready to replace an operational forecast.** At 4 hours ahead the best models still miss by about 7.3% of capacity, and sudden ramps are missed by every model.
 
-**Schedule.** A forecast is issued at 00, 04, 08, 12, 16 and 20 UTC. Each run sees the plant's actual output up to the moment it is issued, including the 16 blocks measured since the previous run, and predicts the next 16 blocks of 15 minutes. Errors are scored per block, as a percentage of installed capacity, similar to how Indian deviation settlement measures wind deviations.
+## Method
 
-**Input setups.**
-
-1. **A: past power only.** The plant's own output history and nothing else.
-2. **B: past power and future wind.** The same history plus the wind speed over the next 4 hours. ERA5 reanalysis at 100 m stands in for the wind forecast a plant would receive.
-3. **B with noisy wind.** A sensitivity test in which ERA5 is degraded into something closer to an operational forecast: per run a timing error of up to one hour, a level bias and an error that drifts over the horizon. Every model sees the identical noisy series, and XGBoost is trained on equally noisy wind.
+**Schedule.** Forecasts are issued at 00, 04, 08, 12, 16 and 20 UTC. Each forecast uses the actual output up to the moment it is issued, including the 16 blocks measured since the previous forecast.
 
 **Models.**
 
 <table>
-  <thead><tr><th>Model</th><th>Kind</th><th>Size</th><th>Weights license</th></tr></thead>
+  <thead><tr><th>Model</th><th>Type</th><th>Size</th><th>Weights license</th></tr></thead>
   <tbody>
-    <tr><td><a href="https://huggingface.co/theforecastingcompany/t0-alpha">t0-alpha</a> (The Forecasting Company)</td><td>zero shot foundation model</td><td>102M</td><td>Apache 2.0</td></tr>
-    <tr><td><a href="https://huggingface.co/theforecastingcompany/t0-beta">t0-beta</a> (The Forecasting Company)</td><td>zero shot foundation model, successor to t0-alpha</td><td>256M</td><td>Apache 2.0</td></tr>
-    <tr><td><a href="https://huggingface.co/amazon/chronos-2">Chronos-2</a> (Amazon)</td><td>zero shot foundation model</td><td>120M</td><td>Apache 2.0</td></tr>
-    <tr><td><a href="https://huggingface.co/google/timesfm-3.0-pytorch">TimesFM 3.0</a> (Google)</td><td>zero shot foundation model</td><td>330M</td><td>TimesFM Non Commercial License</td></tr>
-    <tr><td>XGBoost</td><td>trained on the plant's 2014 history</td><td>400 trees</td><td>Apache 2.0</td></tr>
-    <tr><td>Persistence</td><td>last value held flat</td><td></td><td></td></tr>
-    <tr><td>Power curve</td><td>ERA5 wind mapped to power, fitted on 2014</td><td></td><td></td></tr>
+    <tr><td><a href="https://huggingface.co/theforecastingcompany/t0-alpha">t0-alpha</a> (The Forecasting Company)</td><td>foundation model, zero shot</td><td>102M</td><td>Apache 2.0</td></tr>
+    <tr><td><a href="https://huggingface.co/theforecastingcompany/t0-beta">t0-beta</a> (The Forecasting Company)</td><td>foundation model, zero shot</td><td>256M</td><td>Apache 2.0</td></tr>
+    <tr><td><a href="https://huggingface.co/amazon/chronos-2">Chronos-2</a> (Amazon)</td><td>foundation model, zero shot</td><td>120M</td><td>Apache 2.0</td></tr>
+    <tr><td><a href="https://huggingface.co/google/timesfm-3.0-pytorch">TimesFM 3.0</a> (Google)</td><td>foundation model, zero shot</td><td>330M</td><td>TimesFM Non Commercial License</td></tr>
+    <tr><td>XGBoost</td><td>trained on the plant's 2014 data</td><td>400 trees</td><td>Apache 2.0</td></tr>
+    <tr><td>Persistence</td><td>repeats the last measured value</td><td></td><td></td></tr>
+    <tr><td>Power curve</td><td>wind speed to power, fitted on 2014</td><td></td><td></td></tr>
   </tbody>
 </table>
 
-**Fairness.** Every model gets the same test runs, the same inputs within a setup and the same scoring. Each model also gets the same validation budget on October to December 2014, and the 2015 test year is never used to choose anything:
+**Fair comparison.** All models get the same forecasts, the same inputs within a setup and the same scoring. Each model was tuned on October to December 2014, and the 2015 test year was never used to choose anything. The foundation models chose their history length (512 to 4,096 blocks) and whether to receive the time of day. XGBoost predicts the change from the last measured value and uses no day of year feature.
 
-1. The foundation models choose their history length (512, 1,024, 2,048 or 4,096 blocks) and whether to receive the time of day, which XGBoost always has, as a known future input.
-2. XGBoost's design was chosen on the same split. It predicts the change from the last observed block, so it starts from the latest actual value, and it leaves out day of year, which with a single training year only memorises that year's weather.
+**Realistic wind forecast.** For each forecast the ERA5 wind is shifted by up to one hour, scaled by a random level error and given an error that grows over the 4 hours. Every model sees the same degraded series, and XGBoost is trained on equally degraded wind.
 
-**Statistics.** Confidence intervals come from a bootstrap over whole days, paired across models, so every comparison is made on the same resampled days. The probabilistic score (nCRPS) and the 80% interval coverage are computed from the nine forecast deciles.
+**Statistics.** Confidence intervals and significance tests use a bootstrap over whole days, paired across models. Excluding the 4.4% of blocks with turbine outages or curtailment changes every error by about 0.04 points and does not change the ranking.
 
-## Quick start
+## Running the benchmark
 
-Requires Python 3.10 or newer and about 4 GB of disk for the model weights. On an Apple Silicon Mac the foundation models run on the GPU through MPS; CUDA and CPU also work.
+Requires Python 3.10 or newer and about 4 GB of disk for the model weights. On Apple Silicon the models run on the GPU; CUDA and CPU also work.
 
 ```bash
 git clone https://github.com/likith-17052004/to-alpha-wind-power-benchmarks.git
@@ -124,42 +139,38 @@ pip install -r requirements.txt
 python -m windbench all
 ```
 
-`all` runs the six steps below in order. They can also be run one at a time:
+`all` runs these steps in order:
 
 <table>
   <thead><tr><th>Command</th><th>What it does</th><th>Time on an Apple M5</th></tr></thead>
   <tbody>
-    <tr><td><code>python -m windbench prepare</code></td><td>downloads the ENGIE data (37 MB) and builds the 15 minute series</td><td>under a minute</td></tr>
-    <tr><td><code>python -m windbench tune</code></td><td>picks history length and time of day per foundation model on the validation window</td><td>about 25 minutes</td></tr>
-    <tr><td><code>python -m windbench backtest</code></td><td>runs all 18 model variants over the 2015 test year</td><td>about 30 minutes</td></tr>
-    <tr><td><code>python -m windbench evaluate</code></td><td>scores the forecasts, bootstraps confidence intervals and pairwise tests</td><td>about a minute</td></tr>
-    <tr><td><code>python -m windbench report</code></td><td>builds <code>results/report.html</code> and <code>docs/index.html</code></td><td>seconds</td></tr>
-    <tr><td><code>python -m windbench figures</code></td><td>renders the README charts into <code>docs/figures</code></td><td>seconds</td></tr>
+    <tr><td><code>python -m windbench prepare</code></td><td>downloads the data and builds the 15 minute series</td><td>under a minute</td></tr>
+    <tr><td><code>python -m windbench tune</code></td><td>tunes the foundation models on 2014</td><td>about 25 minutes</td></tr>
+    <tr><td><code>python -m windbench backtest</code></td><td>runs all models over 2015</td><td>about 30 minutes</td></tr>
+    <tr><td><code>python -m windbench evaluate</code></td><td>computes the metrics and significance tests</td><td>about a minute</td></tr>
+    <tr><td><code>python -m windbench report</code></td><td>builds the interactive report</td><td>seconds</td></tr>
+    <tr><td><code>python -m windbench figures</code></td><td>draws the charts in this README</td><td>seconds</td></tr>
   </tbody>
 </table>
 
-`tune` also takes `--models`, which re-tunes only those foundation models and keeps the saved choices of the others. Useful backtest options: `--models` runs a subset (for example `--models persistence "t0-alpha + future wind"`), `--append` replaces only those models in the existing results, and `--quick 24` runs only the first 24 forecasts as a smoke test. Set `WINDBENCH_RESULTS` to write results to another folder. The code structure is described in [`windbench/README.md`](windbench/README.md).
-
-The first run downloads the model weights from Hugging Face. Your results can differ from the committed ones by about 0.00001 MW because of floating point differences between devices.
+Command options and the code layout are described in [`windbench/README.md`](windbench/README.md).
 
 ## Limitations
 
-1. **One plant, one test year.** An 8.2 MW inland site in France in 2015. The ranking may not carry over to other sites, climates or schedules.
-2. **Possible pretraining exposure.** The dataset ships with a widely used open source library, so it may be part of some foundation models' training data. That would flatter the foundation models, not XGBoost. Only data from an unseen plant rules this out.
-3. **ERA5 is not a forecast.** It is a reanalysis of what actually happened, so setup B is an optimistic upper bound. The noisy wind test narrows the gap but is not a substitute for archived operational forecasts.
-4. **Zero shot only.** The foundation models are not fine tuned on the plant, which is where they would usually gain most.
-5. **TimesFM 3.0 cannot be deployed commercially.** Its weights are licensed for non commercial use only; it is included as a research reference.
+1. **One wind farm and one year.** Results may differ for other sites, climates or schedules.
+2. **Public data.** This dataset is widely available, so it may be part of some foundation models' training data.
+3. **ERA5 is not a forecast.** It describes what actually happened, so setup B is optimistic. The noisy wind test only approximates a real forecast.
+4. **No fine tuning.** The foundation models are used as released, without training on the plant.
+5. **TimesFM 3.0 is for non commercial use only**, so it cannot be deployed in production.
 
 ## Data and licenses
 
-The wind farm data is the ENGIE La Haute Borne dataset, published by ENGIE under the French Open Licence 2.0 (Etalab) and redistributed in the example data of NREL's [OpenOA](https://github.com/NatLabRockies/OpenOA). It is downloaded at run time and not stored in this repository.
+The data is the ENGIE La Haute Borne dataset, published by ENGIE under the French Open Licence 2.0 (Etalab) and distributed with NREL's [OpenOA](https://github.com/NatLabRockies/OpenOA). It is downloaded when the benchmark runs and is not stored in this repository.
 
-Model weights are downloaded from Hugging Face and remain under their own licenses: t0-alpha, t0-beta and Chronos-2 under Apache 2.0, TimesFM 3.0 under the TimesFM Non Commercial License. The forecasts in `results/` were produced for non commercial research and benchmarking.
+Model weights keep their own licenses: Apache 2.0 for t0-alpha, t0-beta and Chronos-2, and the TimesFM Non Commercial License for TimesFM 3.0.
 
-## License
-
-The code is released under the [MIT License](LICENSE). Data and model weights keep their own licenses, listed above.
+The code is released under the [MIT License](LICENSE).
 
 ## Acknowledgements
 
-Thanks to ENGIE for opening the La Haute Borne data, to the OpenOA maintainers for keeping it available, and to The Forecasting Company, Amazon and Google for releasing their models.
+Thanks to ENGIE for publishing the La Haute Borne data, to the OpenOA maintainers, and to The Forecasting Company, Amazon and Google for releasing their models.

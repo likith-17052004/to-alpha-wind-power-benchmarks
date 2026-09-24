@@ -1,6 +1,6 @@
 # Code structure
 
-The benchmark is a small Python package. Every step is run through one command line entry point, `python -m windbench <step>`, described in the [main README](../README.md#quick-start).
+The benchmark is a small Python package. Every step is run through one command line entry point, `python -m windbench <step>`, described in the [main README](../README.md#running-the-benchmark).
 
 <table>
   <thead><tr><th>Path</th><th>Contents</th></tr></thead>
@@ -21,5 +21,17 @@ The benchmark is a small Python package. Every step is run through one command l
     <tr><td><code>../docs/figures/</code></td><td>the charts shown in the main README</td></tr>
   </tbody>
 </table>
+
+## Command options
+
+1. `python -m windbench tune --models t0-beta` tunes only the named foundation models and keeps the saved choices of the others.
+2. `python -m windbench backtest --models persistence "t0-alpha + future wind"` runs only the named model variants. Variant names are the model name alone for setup A, with ` + future wind` for setup B and with ` + noisy wind` for the realistic wind test.
+3. `--append` replaces only those variants in the existing results instead of starting over.
+4. `--quick 24` runs only the first 24 forecasts, as a quick check that everything works.
+5. Set the `WINDBENCH_RESULTS` environment variable to write results to another folder.
+
+The first run downloads the model weights from Hugging Face. Results can differ from the committed ones by about 0.00001 MW because of floating point differences between devices.
+
+## Notes
 
 XGBoost is trained in a separate Python process because XGBoost and PyTorch each bundle their own OpenMP runtime, and loading both in one process crashes on macOS.

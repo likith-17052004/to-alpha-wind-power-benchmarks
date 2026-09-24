@@ -80,7 +80,7 @@ def lead_time(m, th, theme):
     # setup A: the models are statistically indistinguishable, so show their range as one band
     a = np.stack([skill(fid) for fid, _, _ in FAMILIES])
     ax.fill_between(steps, a.min(0), a.max(0), color=th["muted"], alpha=0.22, linewidth=0)
-    ax.text(4.3, a.max(0)[3] + 0.8, "all five models, past power only", fontsize=8.5, color=th["muted"])
+    ax.text(4.3, a.max(0)[3] + 0.8, "all models, past power only", fontsize=8.5, color=th["muted"])
     labels = []
     for fid, lab, key in FAMILIES:
         y = skill(fid + FUT_SUFFIX)
@@ -94,23 +94,14 @@ def lead_time(m, th, theme):
     ax.set_ylim(lo_y, hi_y)
     ax.set_yticks(np.arange(-5, hi_y, 5))
     end_labels(ax, labels, th, 16, gap_frac=0.055)
-    ax.annotate("power curve:\nwind only, no recent power", xy=(10.5, pc[9]), xytext=(11.2, -5.4), fontsize=8,
+    ax.annotate("power curve (wind only)", xy=(10.5, pc[9]), xytext=(11.2, -5.4), fontsize=8,
                 color=th["muted"], va="center",
                 arrowprops=dict(arrowstyle="-", color=th["muted"], linewidth=0.8))
     ax.set_xticks(STEP_TICKS, STEP_LABELS)
     ax.set_xlim(1, 16)
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:+.0f}%" if v else "0%"))
-    ax.set_xlabel("how far ahead the forecast is", color=th["muted"], fontsize=9)
-    ax.set_ylabel("how much lower the error is than persistence", color=th["muted"], fontsize=9)
-    finals = [skill(fid + FUT_SUFFIX)[-1] for fid, _, _ in FAMILIES]
-    fig.text(ax.get_position().x0, 0.99,
-             f"Past power alone barely beats persistence; a wind forecast adds "
-             f"{min(finals):.0f} to {max(finals):.0f}% at 4 hours",
-             fontsize=11, color=th["ink"], fontweight="bold", va="top")
-    fig.text(ax.get_position().x0, 0.93, "Coloured lines: each model with the wind speed for the next 4 hours. "
-             "Grey band: the range of all five models without it. Higher is better.",
-             fontsize=9, color=th["muted"], va="top")
-    fig.subplots_adjust(top=0.85)
+    ax.set_xlabel("lead time", color=th["muted"], fontsize=9)
+    ax.set_ylabel("improvement over persistence", color=th["muted"], fontsize=9)
     save(fig, "lead_time", theme)
 
 
@@ -131,21 +122,11 @@ def wind_gain(m, th, theme):
     ax.set_ylim(-5, max(finals) + 3)
     ax.set_yticks(np.arange(0, max(finals) + 3, 5))
     end_labels(ax, labels, th, 16)
-    ax.annotate("15 min ahead: the latest measured\npower already says almost everything",
-                xy=(1.1, 1), xytext=(1.6, 12.5), fontsize=8.5, color=th["muted"], va="center",
-                arrowprops=dict(arrowstyle="-", color=th["muted"], linewidth=0.8,
-                                connectionstyle="angle3,angleA=0,angleB=80"))
     ax.set_xticks(STEP_TICKS, STEP_LABELS)
     ax.set_xlim(1, 16)
     ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.0f}%"))
-    ax.set_xlabel("how far ahead the forecast is", color=th["muted"], fontsize=9)
-    ax.set_ylabel("error removed by the wind forecast", color=th["muted"], fontsize=9)
-    fig.text(ax.get_position().x0, 0.99,
-             f"A wind forecast barely helps at 15 minutes, but cuts error by {min(finals):.0f} to "
-             f"{max(finals):.0f}% at 4 hours", fontsize=11.5, color=th["ink"], fontweight="bold", va="top")
-    fig.text(ax.get_position().x0, 0.925, "Each model with the wind speed for the next 4 hours, compared with "
-             "the same model using past power only. Higher is better.", fontsize=9, color=th["muted"], va="top")
-    fig.subplots_adjust(top=0.84)
+    ax.set_xlabel("lead time", color=th["muted"], fontsize=9)
+    ax.set_ylabel("error reduction from the wind forecast", color=th["muted"], fontsize=9)
     save(fig, "wind_gain", theme)
 
 
@@ -168,12 +149,10 @@ def noisy_wind(m, th, theme):
                 ha="right", fontsize=8.5, color=th["muted"])
     ax.set_yticks(range(len(rows)), [r[0] for r in reversed(rows)], color=th["ink"], fontsize=9.5)
     ax.set_ylim(-0.6, len(rows) - 0.4)
-    ax.set_xlabel("nMAE, % of capacity (lower is better)", color=th["muted"], fontsize=9)
-    ax.set_title("How much of the wind benefit survives a realistic forecast", loc="left", fontsize=11,
-                 color=th["ink"], fontweight="bold", pad=24)
+    ax.set_xlabel("nMAE, % of capacity", color=th["muted"], fontsize=9)
     for x, label, kw in [(0.0, "no wind", dict(facecolor=th["bg"], edgecolor=th["muted"], linewidth=2)),
-                         (0.2, "noisy wind forecast", dict(marker="s", color=th["muted"], alpha=0.55)),
-                         (0.47, "ERA5 wind", dict(color=th["muted"]))]:
+                         (0.2, "noisy wind", dict(marker="s", color=th["muted"], alpha=0.55)),
+                         (0.4, "ERA5 wind", dict(color=th["muted"]))]:
         ax.scatter([x], [1.06], s=40, transform=ax.transAxes, clip_on=False, **kw)
         ax.text(x + 0.02, 1.06, label, transform=ax.transAxes, va="center", fontsize=8.5, color=th["muted"])
     save(fig, "noisy_wind", theme)
@@ -210,22 +189,21 @@ def example_day(ex, th, theme, fids=EXAMPLE_FAMILIES):
         for h in range(0, 24, 4):
             ax.axvline(day + pd.Timedelta(hours=h), color=th["grid"], linewidth=1)
         ax.set_title(f"{lab} + future wind", loc="left", fontsize=10, color=th[mkey], fontweight="bold", pad=6)
-        ax.set_title(f"this day: {100 * np.mean(errs) / cap:.1f}% nMAE", loc="right", fontsize=8.5,
+        ax.set_title(f"nMAE {100 * np.mean(errs) / cap:.1f}%", loc="right", fontsize=8.5,
                      color=th["muted"], pad=6)
         ax.set_ylim(0, cap)
         ax.set_ylabel("output, MW", color=th["muted"], fontsize=9)
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M"))
-    fig.text(axes[0].get_position().x0, 0.965, f"Six real time runs on {ex['day']}, each issued at a grey line",
-             fontsize=11, color=th["ink"], fontweight="bold")
     handles = [plt.Line2D([], [], color=th["ink"], linewidth=1.8),
                plt.Line2D([], [], color=th["muted"], linewidth=2),
                plt.Rectangle((0, 0), 1, 1, color=th["muted"], alpha=0.25, linewidth=0),
-               plt.Line2D([], [], color=th["pers"], linestyle=(0, (1, 3)), linewidth=1.5)]
-    leg = axes[-1].legend(handles, ["actual output", "forecast median", "80% band", "persistence"],
-                          loc="upper left", bbox_to_anchor=(0, -0.14), frameon=False, fontsize=8.5, ncol=4)
+               plt.Line2D([], [], color=th["pers"], linestyle=(0, (1, 3)), linewidth=1.5),
+               plt.Line2D([], [], color=th["grid"], linewidth=1.5)]
+    leg = axes[-1].legend(handles, ["actual output", "forecast median", "80% band", "persistence", "forecast issued"],
+                          loc="upper left", bbox_to_anchor=(0, -0.14), frameon=False, fontsize=8.5, ncol=5)
     for t in leg.get_texts():
         t.set_color(th["muted"])
-    fig.subplots_adjust(hspace=0.28, top=0.9)
+    fig.subplots_adjust(hspace=0.28)
     save(fig, "example_day", theme)
 
 
