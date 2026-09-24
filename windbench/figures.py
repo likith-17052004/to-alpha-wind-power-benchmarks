@@ -25,7 +25,7 @@ FAMILIES = [("t0-alpha", "t0-alpha", "t0"), ("t0-beta", "t0-beta", "t0b"), ("chr
             ("timesfm-3.0", "TimesFM 3.0", "tf"), ("xgboost", "XGBoost", "xgb")]
 STEP_TICKS = [1, 4, 8, 12, 16]
 STEP_LABELS = ["15 min", "1 h", "2 h", "3 h", "4 h"]
-EXAMPLE_FAMILY = "t0-alpha"  # drawn with future wind in the example day chart
+EXAMPLE_FAMILIES = ("t0-alpha", "t0-beta")  # one panel each, with future wind, in the example day chart
 
 
 def style(ax, th):
@@ -148,40 +148,53 @@ def noisy_wind(m, th, theme):
     save(fig, "noisy_wind", theme)
 
 
-def example_day(ex, th, theme, fid=EXAMPLE_FAMILY):
-    """One day of the six 4-hourly runs over the actual output."""
-    lab, mkey = next((lab, key) for f, lab, key in FAMILIES if f == fid)
-    fig, (ax,) = new_fig(th, 11, 3.8)
+def example_day(ex, th, theme, fids=EXAMPLE_FAMILIES):
+    """One day of the six 4-hourly runs over the actual output: one panel per model, same axes."""
     act = pd.DataFrame(ex["actual"], columns=["t", "y"])
     act["t"] = pd.to_datetime(act["t"])
-    ax.plot(act["t"], act["y"], color=th["ink"], linewidth=1.8, label="actual output")
     act_at = dict(zip(act["t"], act["y"]))
-    for runs, key, kw in [(ex["runs"]["persistence"], "pers", dict(linestyle=(0, (1, 3)), linewidth=1.5)),
-                          (ex["runs"][fid + FUT_SUFFIX], mkey, dict(linewidth=2))]:
-        r = pd.DataFrame(runs, columns=["t", "run", "lo", "med", "hi"])
-        r["t"] = pd.to_datetime(r["t"])
-        for _, g in r.groupby("run"):
-            t0 = g["t"].iloc[0] - pd.Timedelta("15min")
-            ts = pd.concat([pd.Series([t0]), g["t"]]) if t0 in act_at else g["t"]
-            pad = [act_at[t0]] if t0 in act_at else []
-            if key == mkey:
-                ax.fill_between(ts, pad + list(g["lo"]), pad + list(g["hi"]), color=th[key], alpha=0.18, linewidth=0)
-                if pad:
-                    ax.scatter([t0], pad, s=18, facecolor=th["bg"], edgecolor=th[key], linewidth=1.5, zorder=4)
-            ax.plot(ts, pad + list(g["med"]), color=th[key], **kw)
-    ax.plot([], [], color=th[mkey], linewidth=2, label=f"{lab} + future wind, median and 80% band")
-    ax.plot([], [], color=th["pers"], linestyle=(0, (1, 3)), linewidth=1.5, label="persistence")
+    cap = PLANTS[PLANT]["capacity"]
     day = pd.Timestamp(ex["day"])
-    for h in range(0, 24, 4):
-        ax.axvline(day + pd.Timedelta(hours=h), color=th["grid"], linewidth=1)
-    ax.set_ylim(0, PLANTS[PLANT]["capacity"])
-    ax.set_ylabel("output, MW", color=th["muted"], fontsize=9)
+    fig, axes = plt.subplots(len(fids), 1, figsize=(11, 2.9 * len(fids)), sharex=True, sharey=True, dpi=160)
+    fig.patch.set_facecolor(th["bg"])
+    for ax, fid in zip(np.atleast_1d(axes), fids):
+        style(ax, th)
+        lab, mkey = next((lab, key) for f, lab, key in FAMILIES if f == fid)
+        ax.plot(act["t"], act["y"], color=th["ink"], linewidth=1.8)
+        errs = []
+        for runs, key, kw in [(ex["runs"]["persistence"], "pers", dict(linestyle=(0, (1, 3)), linewidth=1.5)),
+                              (ex["runs"][fid + FUT_SUFFIX], mkey, dict(linewidth=2))]:
+            r = pd.DataFrame(runs, columns=["t", "run", "lo", "med", "hi"])
+            r["t"] = pd.to_datetime(r["t"])
+            for _, g in r.groupby("run"):
+                t0 = g["t"].iloc[0] - pd.Timedelta("15min")
+                ts = pd.concat([pd.Series([t0]), g["t"]]) if t0 in act_at else g["t"]
+                pad = [act_at[t0]] if t0 in act_at else []
+                if key == mkey:
+                    ax.fill_between(ts, pad + list(g["lo"]), pad + list(g["hi"]), color=th[key], alpha=0.18, linewidth=0)
+                    if pad:
+                        ax.scatter([t0], pad, s=18, facecolor=th["bg"], edgecolor=th[key], linewidth=1.5, zorder=4)
+                    errs += [abs(m - act_at[t]) for t, m in zip(g["t"], g["med"]) if t in act_at]
+                ax.plot(ts, pad + list(g["med"]), color=th[key], **kw)
+        for h in range(0, 24, 4):
+            ax.axvline(day + pd.Timedelta(hours=h), color=th["grid"], linewidth=1)
+        ax.set_title(f"{lab} + future wind", loc="left", fontsize=10, color=th[mkey], fontweight="bold", pad=6)
+        ax.set_title(f"this day: {100 * np.mean(errs) / cap:.1f}% nMAE", loc="right", fontsize=8.5,
+                     color=th["muted"], pad=6)
+        ax.set_ylim(0, cap)
+        ax.set_ylabel("output, MW", color=th["muted"], fontsize=9)
     ax.xaxis.set_major_formatter(matplotlib.dates.DateFormatter("%H:%M"))
-    ax.set_title(f"Six real time runs on {ex['day']}, each issued at a grey line", loc="left", fontsize=11,
-                 color=th["ink"], fontweight="bold", pad=10)
-    leg = ax.legend(loc="upper left", bbox_to_anchor=(0, -0.1), frameon=False, fontsize=8.5, ncol=3)
+    fig.text(axes[0].get_position().x0, 0.965, f"Six real time runs on {ex['day']}, each issued at a grey line",
+             fontsize=11, color=th["ink"], fontweight="bold")
+    handles = [plt.Line2D([], [], color=th["ink"], linewidth=1.8),
+               plt.Line2D([], [], color=th["muted"], linewidth=2),
+               plt.Rectangle((0, 0), 1, 1, color=th["muted"], alpha=0.25, linewidth=0),
+               plt.Line2D([], [], color=th["pers"], linestyle=(0, (1, 3)), linewidth=1.5)]
+    leg = axes[-1].legend(handles, ["actual output", "forecast median", "80% band", "persistence"],
+                          loc="upper left", bbox_to_anchor=(0, -0.14), frameon=False, fontsize=8.5, ncol=4)
     for t in leg.get_texts():
         t.set_color(th["muted"])
+    fig.subplots_adjust(hspace=0.28, top=0.9)
     save(fig, "example_day", theme)
 
 

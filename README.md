@@ -70,11 +70,11 @@ ENGIE La Haute Borne wind farm (4 turbines, 8.2 MW), test year 2015, one run eve
   </tbody>
 </table>
 
-**What a real time run looks like.** Each 4 hourly run of t0-alpha with future wind starts from the last measured block (open circle) and forecasts the next 4 hours with an 80% band. The forecasts follow the level well but, like every model here, miss the sharp ramps.
+**What a real time run looks like.** Each 4 hourly run of t0-alpha (top) and t0-beta (bottom) with future wind starts from the last measured block (open circle) and forecasts the next 4 hours with an 80% band. On this day t0-beta follows the morning ramp that t0-alpha misses (13.4% against 15.4% nMAE for the day), but both miss the sharpest drops.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/example_day_dark.png">
-  <img alt="Six consecutive 4 hourly t0-alpha runs over the actual output on 1 April 2015" src="docs/figures/example_day_light.png">
+  <img alt="Six consecutive 4 hourly runs of t0-alpha and t0-beta over the actual output on 1 April 2015" src="docs/figures/example_day_light.png">
 </picture>
 
 Excluding the 4.4% of blocks affected by turbine outages or curtailment lowers every error by about 0.04 points and leaves the ranking unchanged. The interactive report adds error at every step from 15 minutes to 4 hours, a pairwise significance matrix, the tuning choices and a day of real time runs.
