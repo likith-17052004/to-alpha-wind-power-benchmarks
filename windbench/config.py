@@ -35,7 +35,7 @@ CONTEXT_GRID = [512, 1024, 2048, 4096]
 
 # Model naming: "<model>" = setup A, "<model> + future wind" = setup B,
 # "<model> + noisy wind" = setup B with a degraded wind forecast
-FOUNDATION_MODELS = ["t0-alpha", "chronos-2", "timesfm-3.0"]
+FOUNDATION_MODELS = ["t0-alpha", "t0-beta", "chronos-2", "timesfm-3.0"]
 FUT_SUFFIX = " + future wind"
 NOISY_SUFFIX = " + noisy wind"
 MODELS = ["persistence", "power-curve", "power-curve" + NOISY_SUFFIX,

@@ -16,6 +16,7 @@
   --warn-bg: #fff4e0;
   --warn-ink: #7a4a00;
   --s-t0: #2a78d6;
+  --s-t0b: #e87ba4;
   --s-ch: #eb6834;
   --s-tf: #1baf7a;
   --s-pe: #8a9095;
@@ -33,7 +34,7 @@
     --bg: #111416; --surface: #181c1f; --ink: #eef1f3; --ink-2: #b4bcc2; --ink-3: #8a939a;
     --rule: #2b3236; --grid: #232a2e; --chip: #232a2e; --accent: #7cb8e6;
     --warn-bg: #3a2c12; --warn-ink: #f3c877;
-    --s-t0: #3987e5; --s-ch: #d95926; --s-tf: #199e70; --s-lg: #c98500; --div-neg: #3987e5; --div-pos: #e66767; --s-pe: #8f969b; --band: rgba(57,135,229,0.22);
+    --s-t0: #3987e5; --s-t0b: #d55181; --s-ch: #d95926; --s-tf: #199e70; --s-lg: #c98500; --div-neg: #3987e5; --div-pos: #e66767; --s-pe: #8f969b; --band: rgba(57,135,229,0.22);
   }
 }
 :root[data-theme="dark"] {
@@ -41,7 +42,7 @@
   --bg: #111416; --surface: #181c1f; --ink: #eef1f3; --ink-2: #b4bcc2; --ink-3: #8a939a;
   --rule: #2b3236; --grid: #232a2e; --chip: #232a2e; --accent: #7cb8e6;
   --warn-bg: #3a2c12; --warn-ink: #f3c877;
-  --s-t0: #3987e5; --s-ch: #d95926; --s-tf: #199e70; --s-lg: #c98500; --div-neg: #3987e5; --div-pos: #e66767; --s-pe: #8f969b; --band: rgba(57,135,229,0.22);
+  --s-t0: #3987e5; --s-t0b: #d55181; --s-ch: #d95926; --s-tf: #199e70; --s-lg: #c98500; --div-neg: #3987e5; --div-pos: #e66767; --s-pe: #8f969b; --band: rgba(57,135,229,0.22);
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -124,7 +125,7 @@ a { color: var(--accent); }
   <header>
     <div class="eyebrow">Wind power · 15-minute blocks · zero-shot</div>
     <h1>Plant Wind Forecast Benchmark</h1>
-    <p class="lede">Three time-series foundation models, used zero-shot, and an XGBoost model trained on the plant's own 2014 history forecast a single wind farm, ENGIE's La Haute Borne in France, the way Indian real-time scheduling works: every 4 hours, forecast the next 16 blocks of 15 minutes. Two input setups. <b>A</b>: past power only, where each run sees the actual output up to the moment it is issued, including the 16 blocks measured since the previous run. <b>B</b>: the same past power plus the wind speed over the next 4 hours (ERA5 100 m), standing in for the wind forecast a plant would receive. Errors are shown as a percentage of installed capacity.</p>
+    <p class="lede">Four time-series foundation models, used zero-shot, and an XGBoost model trained on the plant's own 2014 history forecast a single wind farm, ENGIE's La Haute Borne in France, the way Indian real-time scheduling works: every 4 hours, forecast the next 16 blocks of 15 minutes. Two input setups. <b>A</b>: past power only, where each run sees the actual output up to the moment it is issued, including the 16 blocks measured since the previous run. <b>B</b>: the same past power plus the wind speed over the next 4 hours (ERA5 100 m), standing in for the wind forecast a plant would receive. Errors are shown as a percentage of installed capacity.</p>
     <div class="spec" id="spec"></div>
   </header>
 
@@ -190,14 +191,14 @@ a { color: var(--accent); }
       <li>Setup B's wind speed is ERA5 reanalysis (hourly, 100 m, interpolated to 15 min), which is closer to the truth than a real operational forecast, so B's gains are an optimistic upper bound. ERA5 correlates 0.80 with plant output, versus 0.91 for the turbines' own anemometers. It lines up best with power about 1 hour later; no timing correction was applied.</li>
       <li>The power-curve baseline maps ERA5 wind speed to power deciles per 0.5 m/s bin, fitted on 2014 only.</li>
       <li>XGBoost: one multi-quantile model shared across steps, predicting the change from the last observed block (so it is anchored to the latest actual value). Features: 16 power lags, rolling means and spread, time of day, and in B the ERA5 wind over the horizon. Its design was checked on a validation split inside 2014 (train Jan–Sep, validate Oct–Dec), never on the 2015 test year. It is trained on this plant; the foundation models are not. Its ms/run includes training time.</li>
-      <li>The data is from 2014–2015 and ships with NREL's OpenOA library, so it may be in some foundation models' pretraining data (t0-alpha does not disclose its training data). That would flatter the foundation models, not XGBoost. Only an unseen plant, such as your own, rules this out.</li>
+      <li>The data is from 2014–2015 and ships with NREL's OpenOA library, so it may be in some foundation models' pretraining data (neither t0-alpha nor t0-beta discloses its training data). That would flatter the foundation models, not XGBoost. Only an unseen plant, such as your own, rules this out.</li>
       <li>One plant and one test year, with runs always at 00/04/08/12/16/20 UTC: the ranking may not transfer to other sites or schedules.</li>
       <li>TimesFM 3.0 weights are licensed for non-commercial use only; it is included here as a research reference, not a deployable option.</li>
       <li>Gaps in the context (≤10% allowed) were linearly interpolated, and every model received identical inputs. Forecasts were clipped to [0, capacity].</li>
     </ul></section>
     <section><h3>Data & credits</h3><ul>
       <li>ENGIE La Haute Borne (4 × Senvion MM82, 8.2 MW), Open Licence 2.0 (Etalab), via the <a href="https://github.com/NatLabRockies/OpenOA" target="_blank" rel="noopener">OpenOA</a> example data.</li>
-      <li>Models: t0-alpha (Apache-2.0), Chronos-2 (Apache-2.0), TimesFM 3.0 (TimesFM Non-Commercial License).</li>
+      <li>Models: t0-alpha (Apache-2.0), t0-beta (Apache-2.0), Chronos-2 (Apache-2.0), TimesFM 3.0 (TimesFM Non-Commercial License).</li>
     </ul></section>
   </section>
 </div>
@@ -207,6 +208,7 @@ const DATA = /*__DATA__*/null;
 const COV = " + future wind";
 const FAMILIES = [
   { id: "t0-alpha", label: "t0-alpha", color: "var(--s-t0)" },
+  { id: "t0-beta", label: "t0-beta", color: "var(--s-t0b)" },
   { id: "chronos-2", label: "Chronos-2", color: "var(--s-ch)" },
   { id: "timesfm-3.0", label: "TimesFM 3.0", color: "var(--s-tf)" },
   { id: "xgboost", label: "XGBoost", color: "var(--s-lg)", trained: true },
@@ -330,10 +332,11 @@ function renderSummary() {
   const bA = bestIn("hist"), bB = bestIn("cov");
   const s16 = rowsFor(state.plant).filter(r => r.step === 16);
   const at16 = id => s16.find(r => r.model === id).nMAE;
+  const fams = FAMILIES.filter(f => byId[f.id] && byId[f.id + COV]);
   document.getElementById("verdict").innerHTML = `
     <div><span class="k">Best foundation model in A · past power</span><span class="v">${bA.label}</span><span class="muted num" style="font-size:13px">${fmt(byId[bA.id].nMAE)}% nMAE · XGBoost ${fmt(byId["xgboost"].nMAE)}% · persistence ${fmt(byId["persistence"].nMAE)}%</span></div>
     <div><span class="k">Best foundation model in B · + future wind</span><span class="v">${bB.label}</span><span class="muted num" style="font-size:13px">${fmt(byId[bB.id].nMAE)}% nMAE · XGBoost ${fmt(byId["xgboost" + COV].nMAE)}% · power curve ${fmt(byId["power-curve"].nMAE)}%</span></div>
-    <div><span class="k">nMAE gain from future wind (pts)</span><span class="v num">${FAMILIES.map(f => fmt(byId[f.id].nMAE - byId[f.id + COV].nMAE, 2)).join(" / ")}</span><span class="muted" style="font-size:13px">${FAMILIES.map(f => f.label).join(" / ")}</span></div>
+    <div><span class="k">nMAE gain from future wind (pts)</span><span class="v num">${fams.map(f => fmt(byId[f.id].nMAE - byId[f.id + COV].nMAE, 2)).join(" / ")}</span><span class="muted" style="font-size:13px">${fams.map(f => f.label).join(" / ")}</span></div>
     <div><span class="k">At 4 h ahead (step 16)</span><span class="v num">${fmt(at16(bB.id))}% vs ${fmt(at16(bA.id))}%</span><span class="muted" style="font-size:13px">best foundation model, B vs A · persistence ${fmt(at16("persistence"))}%</span></div>`;
 }
 

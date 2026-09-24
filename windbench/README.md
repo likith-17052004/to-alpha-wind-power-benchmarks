@@ -9,7 +9,7 @@ The benchmark is a small Python package. Every step is run through one command l
     <tr><td><code>data.py</code></td><td>download and preparation of the 15 minute plant series</td></tr>
     <tr><td><code>covariates.py</code></td><td>time of day and the noisy wind forecast</td></tr>
     <tr><td><code>baselines.py</code></td><td>persistence and the power curve</td></tr>
-    <tr><td><code>foundation.py</code></td><td>t0-alpha, Chronos-2 and TimesFM 3.0 behind one interface</td></tr>
+    <tr><td><code>foundation.py</code></td><td>t0-alpha, t0-beta, Chronos-2 and TimesFM 3.0 behind one interface</td></tr>
     <tr><td><code>xgb_model.py</code></td><td>XGBoost features, training and prediction</td></tr>
     <tr><td><code>tune.py</code></td><td>validation tuning of the foundation models</td></tr>
     <tr><td><code>backtest.py</code></td><td>the rolling 4 hourly backtest</td></tr>

@@ -3,6 +3,8 @@
 Each runner takes ctx [B, T] (past power) and fut [B, F, T + HORIZON] or None (known-future
 covariates spanning context and horizon) and returns quantile forecasts [B, HORIZON, Q].
 """
+from functools import partial
+
 import numpy as np
 import torch
 
@@ -10,13 +12,16 @@ from .config import BATCH, HORIZON, QUANTILES
 
 DEVICE = "mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu")
 _CACHE = {}
+# Both t0 checkpoints run on the same code. t0-beta needs tfc-t0 0.5.0 or newer: older versions
+# load its weights but normalise the inputs the t0-alpha way, which silently degrades it.
+T0_CHECKPOINTS = ("t0-alpha", "t0-beta")
 
 
 def _load(name: str):
     if name not in _CACHE:
-        if name == "t0-alpha":
+        if name in T0_CHECKPOINTS:
             from t0 import T0Forecaster
-            _CACHE[name] = T0Forecaster.from_pretrained("theforecastingcompany/t0-alpha").eval().to(DEVICE)
+            _CACHE[name] = T0Forecaster.from_pretrained(f"theforecastingcompany/{name}").eval().to(DEVICE)
         elif name == "chronos-2":
             from chronos import Chronos2Pipeline
             _CACHE[name] = Chronos2Pipeline.from_pretrained("amazon/chronos-2", device_map=DEVICE)
@@ -28,8 +33,8 @@ def _load(name: str):
     return _CACHE[name]
 
 
-def run_t0(ctx, fut=None):
-    m = _load("t0-alpha")
+def run_t0(ctx, fut=None, checkpoint="t0-alpha"):
+    m = _load(checkpoint)
     out = []
     with torch.no_grad():
         for b in range(0, len(ctx), BATCH):
@@ -59,4 +64,5 @@ def run_timesfm3(ctx, fut=None):
     return np.stack([np.asarray(o.quantiles, dtype=np.float32).reshape(HORIZON, -1) for o in outs])  # deciles
 
 
-RUNNERS = {"t0-alpha": run_t0, "chronos-2": run_chronos2, "timesfm-3.0": run_timesfm3}
+RUNNERS = {"t0-alpha": run_t0, "t0-beta": partial(run_t0, checkpoint="t0-beta"),
+           "chronos-2": run_chronos2, "timesfm-3.0": run_timesfm3}

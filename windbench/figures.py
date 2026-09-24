@@ -17,14 +17,15 @@ PLANT = "engie_lhb"
 OUT = DOCS_DIR / "figures"
 THEMES = {
     "light": dict(bg="#ffffff", ink="#1f2328", muted="#59636e", grid="#e6e9ec",
-                  t0="#2a78d6", ch="#eb6834", tf="#1baf7a", xgb="#eda100", pers="#8a9095", curve="#4a5157"),
+                  t0="#2a78d6", t0b="#e87ba4", ch="#eb6834", tf="#1baf7a", xgb="#eda100", pers="#8a9095", curve="#4a5157"),
     "dark": dict(bg="#0d1117", ink="#e6edf3", muted="#9198a1", grid="#262c33",
-                 t0="#3987e5", ch="#d95926", tf="#199e70", xgb="#c98500", pers="#8f969b", curve="#b4bcc2"),
+                 t0="#3987e5", t0b="#d55181", ch="#d95926", tf="#199e70", xgb="#c98500", pers="#8f969b", curve="#b4bcc2"),
 }
-FAMILIES = [("t0-alpha", "t0-alpha", "t0"), ("chronos-2", "Chronos-2", "ch"),
+FAMILIES = [("t0-alpha", "t0-alpha", "t0"), ("t0-beta", "t0-beta", "t0b"), ("chronos-2", "Chronos-2", "ch"),
             ("timesfm-3.0", "TimesFM 3.0", "tf"), ("xgboost", "XGBoost", "xgb")]
 STEP_TICKS = [1, 4, 8, 12, 16]
 STEP_LABELS = ["15 min", "1 h", "2 h", "3 h", "4 h"]
+EXAMPLE_FAMILY = "t0-alpha"  # drawn with future wind in the example day chart
 
 
 def style(ax, th):
@@ -122,7 +123,7 @@ def noisy_wind(m, th, theme):
     o = m[m.step == 0].set_index("model")["nMAE"]
     rows = [(lab, key, o.get(fid), o[fid + NOISY_SUFFIX], o[fid + FUT_SUFFIX]) for fid, lab, key in FAMILIES]
     rows.sort(key=lambda r: r[3])
-    fig, (ax,) = new_fig(th, 8, 3.4)
+    fig, (ax,) = new_fig(th, 8, 1.0 + 0.6 * len(rows))
     ax.grid(axis="y", visible=False)
     ax.grid(axis="x", color=th["grid"], linewidth=0.8)
     for k, (lab, key, a, n, e) in enumerate(rows):
@@ -147,27 +148,28 @@ def noisy_wind(m, th, theme):
     save(fig, "noisy_wind", theme)
 
 
-def example_day(ex, th, theme, model="t0-alpha" + FUT_SUFFIX):
+def example_day(ex, th, theme, fid=EXAMPLE_FAMILY):
     """One day of the six 4-hourly runs over the actual output."""
+    lab, mkey = next((lab, key) for f, lab, key in FAMILIES if f == fid)
     fig, (ax,) = new_fig(th, 11, 3.8)
     act = pd.DataFrame(ex["actual"], columns=["t", "y"])
     act["t"] = pd.to_datetime(act["t"])
     ax.plot(act["t"], act["y"], color=th["ink"], linewidth=1.8, label="actual output")
     act_at = dict(zip(act["t"], act["y"]))
     for runs, key, kw in [(ex["runs"]["persistence"], "pers", dict(linestyle=(0, (1, 3)), linewidth=1.5)),
-                          (ex["runs"][model], "t0", dict(linewidth=2))]:
+                          (ex["runs"][fid + FUT_SUFFIX], mkey, dict(linewidth=2))]:
         r = pd.DataFrame(runs, columns=["t", "run", "lo", "med", "hi"])
         r["t"] = pd.to_datetime(r["t"])
         for _, g in r.groupby("run"):
             t0 = g["t"].iloc[0] - pd.Timedelta("15min")
             ts = pd.concat([pd.Series([t0]), g["t"]]) if t0 in act_at else g["t"]
             pad = [act_at[t0]] if t0 in act_at else []
-            if key == "t0":
+            if key == mkey:
                 ax.fill_between(ts, pad + list(g["lo"]), pad + list(g["hi"]), color=th[key], alpha=0.18, linewidth=0)
                 if pad:
                     ax.scatter([t0], pad, s=18, facecolor=th["bg"], edgecolor=th[key], linewidth=1.5, zorder=4)
             ax.plot(ts, pad + list(g["med"]), color=th[key], **kw)
-    ax.plot([], [], color=th["t0"], linewidth=2, label="t0-alpha + future wind, median and 80% band")
+    ax.plot([], [], color=th[mkey], linewidth=2, label=f"{lab} + future wind, median and 80% band")
     ax.plot([], [], color=th["pers"], linestyle=(0, (1, 3)), linewidth=1.5, label="persistence")
     day = pd.Timestamp(ex["day"])
     for h in range(0, 24, 4):

@@ -2,9 +2,9 @@
 
 **Can time series foundation models replace a wind farm's real time power forecast?**
 
-WindBench compares three zero shot time series foundation models (t0-alpha, Chronos-2 and TimesFM 3.0) with a gradient boosted model trained on the plant's own history (XGBoost) and two simple baselines, on a real wind farm, run the way Indian real time scheduling works: every 4 hours, forecast the next 16 blocks of 15 minutes.
+WindBench compares four zero shot time series foundation models (t0-alpha, t0-beta, Chronos-2 and TimesFM 3.0) with a gradient boosted model trained on the plant's own history (XGBoost) and two simple baselines, on a real wind farm, run the way Indian real time scheduling works: every 4 hours, forecast the next 16 blocks of 15 minutes.
 
-Everything runs on a laptop. The full benchmark (tuning, 15 model variants, 2,189 forecast runs each) takes under an hour on an Apple M5.
+Everything runs on a laptop. The full benchmark (tuning, 18 model variants, 2,189 forecast runs each) takes about an hour on an Apple M5.
 
 **Interactive report:** [likith-17052004.github.io/to-alpha-wind-power-benchmarks](https://likith-17052004.github.io/to-alpha-wind-power-benchmarks/) (or open [`docs/index.html`](docs/index.html) locally) with every metric, a lead time explorer, pairwise significance tests and a day of real time runs.
 
@@ -17,8 +17,8 @@ Everything runs on a laptop. The full benchmark (tuning, 15 model variants, 2,18
 
 1. **With past power alone, nothing meaningfully beats persistence.** Every model, foundation or trained, improves on holding the last value flat by only 2.6 to 4.3 percent, and within that group most differences are not statistically significant.
 2. **Knowing the wind over the next 4 hours is what matters.** Adding it cuts every model's error by 0.55 to 0.97 percentage points of capacity, and the gain grows with lead time.
-3. **Zero shot foundation models match a model trained on the plant.** With future wind, TimesFM 3.0 is the most accurate model (5.80% nMAE), significantly better than XGBoost (6.00%). t0-alpha (6.09%) is statistically indistinguishable from XGBoost.
-4. **Forecast quality decides the ranking among deployable models.** With a realistic, noisy wind forecast, Chronos-2 and XGBoost tie (6.31% and 6.30%) while t0-alpha, which leans most on the wind input, keeps only about half of its gain (6.44%).
+3. **Zero shot foundation models match a model trained on the plant.** With future wind, TimesFM 3.0 is the most accurate model (5.80% nMAE). t0-beta comes second (5.98%), level with XGBoost trained on the plant (6.00%) and significantly better than its predecessor t0-alpha (6.09%).
+4. **t0-beta is the most robust deployable model.** With a realistic, noisy wind forecast it keeps 75% of its wind gain (6.19%), ahead of XGBoost (6.30%) and Chronos-2 (6.31%), while t0-alpha keeps only about half (6.44%). It also fixes t0-alpha's weaker first step: 2.63% at 15 minutes against 2.81%.
 5. **None of them is ready to replace an operational forecast as is.** The best models still miss by about 7.3% of capacity on average at 4 hours ahead, and large errors come from real weather ramps that no model anticipates.
 
 ## Results
@@ -35,14 +35,16 @@ ENGIE La Haute Borne wind farm (4 turbines, 8.2 MW), test year 2015, one run eve
     <tr><th>Setup</th><th>Model</th><th>nMAE %</th><th>Skill vs persistence</th><th>nMAE at 15 min</th><th>nMAE at 4 h</th><th>ms per run</th></tr>
   </thead>
   <tbody>
-    <tr><td rowspan="5">B: past power and future wind</td><td>TimesFM 3.0 (zero shot)</td><td><b>5.80</b></td><td><b>17.7%</b></td><td><b>2.63</b></td><td>7.37</td><td>34</td></tr>
+    <tr><td rowspan="6">B: past power and future wind</td><td>TimesFM 3.0 (zero shot)</td><td><b>5.80</b></td><td><b>17.7%</b></td><td><b>2.63</b></td><td>7.37</td><td>34</td></tr>
+    <tr><td>t0-beta (zero shot)</td><td>5.98</td><td>15.1%</td><td><b>2.63</b></td><td>7.48</td><td>104</td></tr>
     <tr><td>XGBoost (trained on the plant)</td><td>6.00</td><td>14.8%</td><td>2.87</td><td><b>7.31</b></td><td>8</td></tr>
     <tr><td>t0-alpha (zero shot)</td><td>6.09</td><td>13.6%</td><td>2.81</td><td>7.68</td><td>96</td></tr>
     <tr><td>Chronos-2 (zero shot)</td><td>6.19</td><td>12.1%</td><td>2.75</td><td>8.02</td><td>41</td></tr>
     <tr><td>Power curve (baseline)</td><td>7.70</td><td>minus 9.2%</td><td>7.52</td><td>7.59</td><td>0</td></tr>
-    <tr><td rowspan="5">A: past power only</td><td>Chronos-2 (zero shot)</td><td><b>6.75</b></td><td><b>4.3%</b></td><td>2.78</td><td><b>9.03</b></td><td>44</td></tr>
+    <tr><td rowspan="6">A: past power only</td><td>Chronos-2 (zero shot)</td><td><b>6.75</b></td><td><b>4.3%</b></td><td>2.78</td><td><b>9.03</b></td><td>44</td></tr>
     <tr><td>TimesFM 3.0 (zero shot)</td><td>6.77</td><td>3.9%</td><td><b>2.68</b></td><td>9.06</td><td>90</td></tr>
     <tr><td>t0-alpha (zero shot)</td><td>6.81</td><td>3.4%</td><td>2.72</td><td>9.10</td><td>25</td></tr>
+    <tr><td>t0-beta (zero shot)</td><td>6.82</td><td>3.3%</td><td>2.67</td><td>9.21</td><td>77</td></tr>
     <tr><td>XGBoost (trained on the plant)</td><td>6.87</td><td>2.6%</td><td>2.84</td><td>9.10</td><td>7</td></tr>
     <tr><td>Persistence (baseline)</td><td>7.05</td><td>0%</td><td>2.72</td><td>9.62</td><td>0</td></tr>
   </tbody>
@@ -61,6 +63,7 @@ ENGIE La Haute Borne wind farm (4 turbines, 8.2 MW), test year 2015, one run eve
   </thead>
   <tbody>
     <tr><td>TimesFM 3.0</td><td>6.77</td><td><b>6.08</b></td><td>5.80</td><td>72%</td></tr>
+    <tr><td>t0-beta</td><td>6.82</td><td>6.19</td><td>5.98</td><td>75%</td></tr>
     <tr><td>XGBoost</td><td>6.87</td><td>6.30</td><td>6.00</td><td>66%</td></tr>
     <tr><td>Chronos-2</td><td>6.75</td><td>6.31</td><td>6.19</td><td>78%</td></tr>
     <tr><td>t0-alpha</td><td>6.81</td><td>6.44</td><td>6.09</td><td>52%</td></tr>
@@ -92,6 +95,7 @@ Excluding the 4.4% of blocks affected by turbine outages or curtailment lowers e
   <thead><tr><th>Model</th><th>Kind</th><th>Size</th><th>Weights license</th></tr></thead>
   <tbody>
     <tr><td><a href="https://huggingface.co/theforecastingcompany/t0-alpha">t0-alpha</a> (The Forecasting Company)</td><td>zero shot foundation model</td><td>102M</td><td>Apache 2.0</td></tr>
+    <tr><td><a href="https://huggingface.co/theforecastingcompany/t0-beta">t0-beta</a> (The Forecasting Company)</td><td>zero shot foundation model, successor to t0-alpha</td><td>256M</td><td>Apache 2.0</td></tr>
     <tr><td><a href="https://huggingface.co/amazon/chronos-2">Chronos-2</a> (Amazon)</td><td>zero shot foundation model</td><td>120M</td><td>Apache 2.0</td></tr>
     <tr><td><a href="https://huggingface.co/google/timesfm-3.0-pytorch">TimesFM 3.0</a> (Google)</td><td>zero shot foundation model</td><td>330M</td><td>TimesFM Non Commercial License</td></tr>
     <tr><td>XGBoost</td><td>trained on the plant's 2014 history</td><td>400 trees</td><td>Apache 2.0</td></tr>
@@ -109,7 +113,7 @@ Excluding the 4.4% of blocks affected by turbine outages or curtailment lowers e
 
 ## Quick start
 
-Requires Python 3.10 or newer and about 3 GB of disk for the model weights. On an Apple Silicon Mac the foundation models run on the GPU through MPS; CUDA and CPU also work.
+Requires Python 3.10 or newer and about 4 GB of disk for the model weights. On an Apple Silicon Mac the foundation models run on the GPU through MPS; CUDA and CPU also work.
 
 ```bash
 git clone https://github.com/likith-17052004/to-alpha-wind-power-benchmarks.git
@@ -126,15 +130,15 @@ python -m windbench all
   <thead><tr><th>Command</th><th>What it does</th><th>Time on an Apple M5</th></tr></thead>
   <tbody>
     <tr><td><code>python -m windbench prepare</code></td><td>downloads the ENGIE data (37 MB) and builds the 15 minute series</td><td>under a minute</td></tr>
-    <tr><td><code>python -m windbench tune</code></td><td>picks history length and time of day per foundation model on the validation window</td><td>about 20 minutes</td></tr>
-    <tr><td><code>python -m windbench backtest</code></td><td>runs all 15 model variants over the 2015 test year</td><td>about 20 minutes</td></tr>
+    <tr><td><code>python -m windbench tune</code></td><td>picks history length and time of day per foundation model on the validation window</td><td>about 25 minutes</td></tr>
+    <tr><td><code>python -m windbench backtest</code></td><td>runs all 18 model variants over the 2015 test year</td><td>about 30 minutes</td></tr>
     <tr><td><code>python -m windbench evaluate</code></td><td>scores the forecasts, bootstraps confidence intervals and pairwise tests</td><td>about a minute</td></tr>
     <tr><td><code>python -m windbench report</code></td><td>builds <code>results/report.html</code> and <code>docs/index.html</code></td><td>seconds</td></tr>
     <tr><td><code>python -m windbench figures</code></td><td>renders the README charts into <code>docs/figures</code></td><td>seconds</td></tr>
   </tbody>
 </table>
 
-Useful backtest options: `--models` runs a subset (for example `--models persistence "t0-alpha + future wind"`), `--append` replaces only those models in the existing results, and `--quick 24` runs only the first 24 forecasts as a smoke test. Set `WINDBENCH_RESULTS` to write results to another folder. The code structure is described in [`windbench/README.md`](windbench/README.md).
+`tune` also takes `--models`, which re-tunes only those foundation models and keeps the saved choices of the others. Useful backtest options: `--models` runs a subset (for example `--models persistence "t0-alpha + future wind"`), `--append` replaces only those models in the existing results, and `--quick 24` runs only the first 24 forecasts as a smoke test. Set `WINDBENCH_RESULTS` to write results to another folder. The code structure is described in [`windbench/README.md`](windbench/README.md).
 
 The first run downloads the model weights from Hugging Face. Your results can differ from the committed ones by about 0.00001 MW because of floating point differences between devices.
 
@@ -150,7 +154,7 @@ The first run downloads the model weights from Hugging Face. Your results can di
 
 The wind farm data is the ENGIE La Haute Borne dataset, published by ENGIE under the French Open Licence 2.0 (Etalab) and redistributed in the example data of NREL's [OpenOA](https://github.com/NatLabRockies/OpenOA). It is downloaded at run time and not stored in this repository.
 
-Model weights are downloaded from Hugging Face and remain under their own licenses: t0-alpha and Chronos-2 under Apache 2.0, TimesFM 3.0 under the TimesFM Non Commercial License. The forecasts in `results/` were produced for non commercial research and benchmarking.
+Model weights are downloaded from Hugging Face and remain under their own licenses: t0-alpha, t0-beta and Chronos-2 under Apache 2.0, TimesFM 3.0 under the TimesFM Non Commercial License. The forecasts in `results/` were produced for non commercial research and benchmarking.
 
 ## License
 

@@ -11,6 +11,18 @@
       "nMAE": 5.037903308868408
     }
   },
+  "t0-beta": {
+    "A": {
+      "context": 2048,
+      "calendar": true,
+      "nMAE": 5.912766933441162
+    },
+    "B": {
+      "context": 2048,
+      "calendar": true,
+      "nMAE": 5.0490546226501465
+    }
+  },
   "chronos-2": {
     "A": {
       "context": 4096,
