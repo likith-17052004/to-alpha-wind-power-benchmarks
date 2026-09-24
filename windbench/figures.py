@@ -98,23 +98,37 @@ def lead_time(m, th, theme):
 
 
 def wind_gain(m, th, theme):
-    """Setup B minus setup A at every step: what knowing the future wind is worth."""
-    fig, (ax,) = new_fig(th, 8, 3.8)
+    """How much knowing the wind over the next 4 hours cuts each model's own error, by lead time."""
+    fig, (ax,) = new_fig(th, 8.5, 4.4)
     steps = np.arange(1, 17)
     get = lambda model: m[(m.model == model) & (m.step > 0)].sort_values("step")["nMAE"].to_numpy()  # noqa: E731
-    labels = []
+    labels, finals = [], []
     for fid, lab, key in FAMILIES:
-        d = get(fid + FUT_SUFFIX) - get(fid)
-        ax.plot(steps, d, color=th[key], linewidth=2)
-        labels.append((f"{lab} {d[-1]:+.2f}", d[-1], th[key]))
+        without, with_wind = get(fid), get(fid + FUT_SUFFIX)
+        cut = 100 * (without - with_wind) / without  # % of the model's own error removed
+        ax.plot(steps, cut, color=th[key], linewidth=2.2, solid_capstyle="round")
+        labels.append((f"{lab}  {cut[-1]:.0f}%", cut[-1], th[key]))
+        finals.append(cut[-1])
     ax.axhline(0, color=th["muted"], linewidth=1)
+    ax.text(16, 0.6, "no benefit", ha="right", va="bottom", fontsize=8.5, color=th["muted"])
+    ax.set_ylim(-5, max(finals) + 3)
+    ax.set_yticks(np.arange(0, max(finals) + 3, 5))
     end_labels(ax, labels, th, 16)
+    ax.annotate("15 min ahead: the latest measured\npower already says almost everything",
+                xy=(1.1, 1), xytext=(1.6, 12.5), fontsize=8.5, color=th["muted"], va="center",
+                arrowprops=dict(arrowstyle="-", color=th["muted"], linewidth=0.8,
+                                connectionstyle="angle3,angleA=0,angleB=80"))
     ax.set_xticks(STEP_TICKS, STEP_LABELS)
     ax.set_xlim(1, 16)
-    ax.set_xlabel("lead time", color=th["muted"], fontsize=9)
-    ax.set_ylabel("change in nMAE, percentage points", color=th["muted"], fontsize=9)
-    ax.set_title("Adding the future wind: below zero means it helped", loc="left", fontsize=11,
-                 color=th["ink"], fontweight="bold", pad=10)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.0f}%"))
+    ax.set_xlabel("how far ahead the forecast is", color=th["muted"], fontsize=9)
+    ax.set_ylabel("error removed by the wind forecast", color=th["muted"], fontsize=9)
+    fig.text(ax.get_position().x0, 0.99,
+             f"A wind forecast barely helps at 15 minutes, but cuts error by {min(finals):.0f} to "
+             f"{max(finals):.0f}% at 4 hours", fontsize=11.5, color=th["ink"], fontweight="bold", va="top")
+    fig.text(ax.get_position().x0, 0.925, "Each model with the wind speed for the next 4 hours, compared with "
+             "the same model using past power only. Higher is better.", fontsize=9, color=th["muted"], va="top")
+    fig.subplots_adjust(top=0.84)
     save(fig, "wind_gain", theme)
 
 

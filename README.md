@@ -25,7 +25,7 @@ Everything runs on a laptop. The full benchmark (tuning, 18 model variants, 2,18
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/wind_gain_dark.png">
-  <img alt="Change in error from adding the future wind, at every lead time, per model" src="docs/figures/wind_gain_light.png">
+  <img alt="Share of each model's error removed by a wind forecast, from 15 minutes to 4 hours ahead: near zero at 15 minutes, 11 to 20 percent at 4 hours" src="docs/figures/wind_gain_light.png">
 </picture>
 
 ENGIE La Haute Borne wind farm (4 turbines, 8.2 MW), test year 2015, one run every 4 hours, 2,189 runs per model. nMAE is the mean absolute error of the median forecast as a percentage of installed capacity; skill is the reduction in that error versus persistence.
