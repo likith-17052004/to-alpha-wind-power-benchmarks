@@ -134,33 +134,9 @@ python -m windbench all
   </tbody>
 </table>
 
-Useful backtest options: `--models` runs a subset (for example `--models persistence "t0-alpha + future wind"`), `--append` replaces only those models in the existing results, and `--quick 24` runs only the first 24 forecasts as a smoke test. Set `WINDBENCH_RESULTS` to write results to another folder.
+Useful backtest options: `--models` runs a subset (for example `--models persistence "t0-alpha + future wind"`), `--append` replaces only those models in the existing results, and `--quick 24` runs only the first 24 forecasts as a smoke test. Set `WINDBENCH_RESULTS` to write results to another folder. The code structure is described in [`windbench/README.md`](windbench/README.md).
 
 The first run downloads the model weights from Hugging Face. Your results can differ from the committed ones by about 0.00001 MW because of floating point differences between devices.
-
-## Repository layout
-
-<table>
-  <thead><tr><th>Path</th><th>Contents</th></tr></thead>
-  <tbody>
-    <tr><td><code>windbench/config.py</code></td><td>paths, plant settings, schedule, quantiles and model names</td></tr>
-    <tr><td><code>windbench/data.py</code></td><td>download and preparation of the 15 minute plant series</td></tr>
-    <tr><td><code>windbench/covariates.py</code></td><td>time of day and the noisy wind forecast</td></tr>
-    <tr><td><code>windbench/baselines.py</code></td><td>persistence and the power curve</td></tr>
-    <tr><td><code>windbench/foundation.py</code></td><td>t0-alpha, Chronos-2 and TimesFM 3.0 behind one interface</td></tr>
-    <tr><td><code>windbench/xgb_model.py</code></td><td>XGBoost features, training and prediction</td></tr>
-    <tr><td><code>windbench/tune.py</code></td><td>validation tuning of the foundation models</td></tr>
-    <tr><td><code>windbench/backtest.py</code></td><td>the rolling 4 hourly backtest</td></tr>
-    <tr><td><code>windbench/evaluate.py</code></td><td>metrics, bootstrap intervals and pairwise tests</td></tr>
-    <tr><td><code>windbench/report.py</code></td><td>builds the interactive HTML report from <code>templates/report.html</code></td></tr>
-    <tr><td><code>windbench/figures.py</code></td><td>renders the README charts for light and dark themes</td></tr>
-    <tr><td><code>results/</code></td><td>metrics, tuning choices and timings from the published run</td></tr>
-    <tr><td><code>docs/index.html</code></td><td>the interactive report, served by GitHub Pages</td></tr>
-    <tr><td><code>docs/figures/</code></td><td>the charts shown in this README</td></tr>
-  </tbody>
-</table>
-
-XGBoost is trained in a separate Python process because XGBoost and PyTorch each bundle their own OpenMP runtime, and loading both in one process crashes on macOS.
 
 ## Limitations
 
