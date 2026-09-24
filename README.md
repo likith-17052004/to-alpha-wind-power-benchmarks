@@ -174,3 +174,14 @@ The code is released under the [MIT License](LICENSE).
 ## Acknowledgements
 
 Thanks to ENGIE for publishing the La Haute Borne data, to the OpenOA maintainers, and to The Forecasting Company, Amazon and Google for releasing their models.
+
+## Contact
+
+If you find this benchmark interesting or would like to discuss it, I would be happy to talk.
+
+<table>
+  <tbody>
+    <tr><td><b>LinkedIn</b></td><td><a href="https://www.linkedin.com/in/likith-muni-narakala-7b525722a/">linkedin.com/in/likith-muni-narakala-7b525722a</a></td></tr>
+    <tr><td><b>Email</b></td><td><a href="mailto:likithmuni.2004@gmail.com">likithmuni.2004@gmail.com</a></td></tr>
+  </tbody>
+</table>
