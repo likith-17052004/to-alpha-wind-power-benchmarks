@@ -1,0 +1,38 @@
+{
+  "t0-alpha": {
+    "A": {
+      "context": 4096,
+      "calendar": false,
+      "nMAE": 5.832169532775879
+    },
+    "B": {
+      "context": 4096,
+      "calendar": true,
+      "nMAE": 5.037903308868408
+    }
+  },
+  "chronos-2": {
+    "A": {
+      "context": 4096,
+      "calendar": false,
+      "nMAE": 5.852440357208252
+    },
+    "B": {
+      "context": 1024,
+      "calendar": true,
+      "nMAE": 5.2098517417907715
+    }
+  },
+  "timesfm-3.0": {
+    "A": {
+      "context": 2048,
+      "calendar": true,
+      "nMAE": 5.802738666534424
+    },
+    "B": {
+      "context": 1024,
+      "calendar": false,
+      "nMAE": 4.750490188598633
+    }
+  }
+}

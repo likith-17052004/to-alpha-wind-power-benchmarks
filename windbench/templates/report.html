@@ -1,0 +1,676 @@
+<title>Plant Wind Forecast Benchmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+:root {
+  --bg: #f4f6f7;
+  --surface: #fcfcfb;
+  --ink: #101416;
+  --ink-2: #4a5157;
+  --ink-3: #737b82;
+  --rule: #dde2e5;
+  --grid: #e8ecee;
+  --chip: #e9eef1;
+  --accent: #1d5f8c;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4a00;
+  --s-t0: #2a78d6;
+  --s-ch: #eb6834;
+  --s-tf: #1baf7a;
+  --s-pe: #8a9095;
+  --s-lg: #eda100;
+  --div-neg: #2a78d6;
+  --div-pos: #e34948;
+  --band: rgba(42,120,214,0.14);
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111416; --surface: #181c1f; --ink: #eef1f3; --ink-2: #b4bcc2; --ink-3: #8a939a;
+    --rule: #2b3236; --grid: #232a2e; --chip: #232a2e; --accent: #7cb8e6;
+    --warn-bg: #3a2c12; --warn-ink: #f3c877;
+    --s-t0: #3987e5; --s-ch: #d95926; --s-tf: #199e70; --s-lg: #c98500; --div-neg: #3987e5; --div-pos: #e66767; --s-pe: #8f969b; --band: rgba(57,135,229,0.22);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111416; --surface: #181c1f; --ink: #eef1f3; --ink-2: #b4bcc2; --ink-3: #8a939a;
+  --rule: #2b3236; --grid: #232a2e; --chip: #232a2e; --accent: #7cb8e6;
+  --warn-bg: #3a2c12; --warn-ink: #f3c877;
+  --s-t0: #3987e5; --s-ch: #d95926; --s-tf: #199e70; --s-lg: #c98500; --div-neg: #3987e5; --div-pos: #e66767; --s-pe: #8f969b; --band: rgba(57,135,229,0.22);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font); margin: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 20px; padding-block: 36px 64px; display: grid; gap: 28px; }
+h1, h2 { font-family: var(--cond); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.005em; }
+h1 { font-size: clamp(28px, 4.2vw, 40px); line-height: 1.1; }
+h2 { font-size: 21px; line-height: 1.25; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.lede { color: var(--ink-2); font-size: 16px; }
+.muted { color: var(--ink-3); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+header { display: grid; gap: 12px; }
+.spec { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.spec span { background: var(--chip); border-radius: 4px; padding: 4px 9px; font: 13px/1.3 var(--mono); color: var(--ink-2); }
+.panel { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 22px; display: grid; gap: 16px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.panel-head > div { display: grid; gap: 4px; }
+.seg { display: inline-flex; background: var(--chip); border-radius: 6px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { font: 500 13px/1 var(--font); color: var(--ink-2); background: transparent; border: 0; border-radius: 4px; padding: 8px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.seg button:focus-visible, .chipbtn:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.plantbar { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; }
+.plantmeta { font: 13px/1.4 var(--mono); color: var(--ink-3); }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 6px; padding: 12px 14px; font-size: 14px; display: flex; gap: 10px; align-items: flex-start; }
+.warn b { font-weight: 600; }
+.verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.verdict div { border-left: 2px solid var(--rule); padding: 2px 0 2px 12px; display: grid; gap: 2px; }
+.verdict .k { font-size: 13px; color: var(--ink-3); }
+.verdict .v { font: 500 20px/1.3 var(--cond); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: right; padding: 9px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 500 12px/1.2 var(--mono); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+th:first-child, td:first-child { text-align: left; }
+td { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+td.model { font-family: var(--font); font-weight: 500; }
+.sw { display: inline-block; width: 18px; height: 0; border-top: 3px solid currentColor; vertical-align: middle; margin-right: 8px; border-radius: 2px; }
+.sw.dash { border-top-style: dashed; }
+.sw.dot { border-top-style: dotted; }
+.sw.dashdot { border-top-style: dashed; border-top-width: 2px; }
+.scroll { overflow-x: auto; }
+.forest { width: 160px; }
+.best { font-weight: 600; }
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--ink-3); font: 12px var(--mono); }
+.axis-title { fill: var(--ink-2); font: 12px var(--font); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; }
+.chartbox { position: relative; overflow-x: auto; }
+.chartbox svg { min-width: 680px; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; font: 12px/1.5 var(--mono); color: var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,0.12); min-width: 170px; }
+.tip .row { display: flex; justify-content: space-between; gap: 14px; }
+.tip .h { color: var(--ink-3); margin-bottom: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chipbtn { font: 500 13px/1 var(--font); border: 1px solid var(--rule); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; }
+.chipbtn[aria-pressed="true"] { border-color: var(--ink-3); color: var(--ink); background: var(--chip); }
+details { border-top: 1px solid var(--rule); padding-top: 12px; }
+summary { cursor: pointer; font-weight: 500; color: var(--ink-2); }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px 32px; }
+.notes section { display: grid; gap: 8px; align-content: start; }
+.notes h3 { font: 600 15px/1.3 var(--font); margin: 0; }
+.notes p, .notes li { font-size: 14px; color: var(--ink-2); }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.pm { border-collapse: separate; border-spacing: 2px; width: auto; font-size: 12px; }
+.pm th { font: 500 11px/1.2 var(--mono); text-transform: none; letter-spacing: 0; padding: 4px 6px; white-space: nowrap; }
+.pm th.rowh { text-align: right; }
+.pm th.colh { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; height: 150px; vertical-align: bottom; }
+.pm td { text-align: center; min-width: 52px; padding: 7px 4px; border: 0; border-radius: 3px; font: 12px var(--mono); }
+.pm td.diag { background: var(--chip); }
+.pm td.ns { color: var(--ink-3); background: var(--grid); }
+.key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--ink-2); align-items: center; }
+.key i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 6px; vertical-align: -2px; }
+a { color: var(--accent); }
+@media (max-width: 560px) { .panel { padding: 16px; } .wrap { padding-inline: 16px; } }
+@media (prefers-reduced-motion: no-preference) { .seg button, .chipbtn { transition: background .15s, color .15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Wind power · 15-minute blocks · zero-shot</div>
+    <h1>Plant Wind Forecast Benchmark</h1>
+    <p class="lede">Three time-series foundation models, used zero-shot, and an XGBoost model trained on the plant's own 2014 history forecast a single wind farm, ENGIE's La Haute Borne in France, the way Indian real-time scheduling works: every 4 hours, forecast the next 16 blocks of 15 minutes. Two input setups. <b>A</b>: past power only, where each run sees the actual output up to the moment it is issued, including the 16 blocks measured since the previous run. <b>B</b>: the same past power plus the wind speed over the next 4 hours (ERA5 100 m), standing in for the wind forecast a plant would receive. Errors are shown as a percentage of installed capacity.</p>
+    <div class="spec" id="spec"></div>
+  </header>
+
+  <div class="plantbar">
+    <div class="seg" role="group" aria-label="Plant" id="plantSeg"></div>
+    <div class="seg" role="group" aria-label="Scoring" id="scoringSeg"></div>
+    <div class="plantmeta" id="plantMeta"></div>
+  </div>
+
+
+  <section class="panel" aria-labelledby="sumTitle">
+    <div class="panel-head"><div><h2 id="sumTitle">Overall comparison</h2><p class="muted">All 16 steps pooled across the test year. Skill = reduction in MAE versus persistence (last value held flat); the bar shows its 95% interval, bootstrapped over days.</p></div></div>
+    <div class="verdict" id="verdict"></div>
+    <div class="scroll"><table id="sumTable"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="stepTitle">
+    <div class="panel-head">
+      <div><h2 id="stepTitle">Error at each forecast step</h2><p class="muted" id="metricDesc"></p></div>
+      <div style="display:grid;gap:8px;justify-items:end"><div class="seg" role="group" aria-label="Metric" id="metricSeg"></div><div class="seg" role="group" aria-label="Input setup" id="variantSeg"></div></div>
+    </div>
+    <div class="legend" id="stepLegend"></div>
+    <div class="chartbox" id="stepBox"><svg id="stepChart" role="img" aria-label="Error by forecast step"></svg><div class="tip" id="stepTip" hidden></div></div>
+    <details><summary>Per-step values (table)</summary><div class="scroll" style="margin-top:12px"><table id="stepTable"></table></div></details>
+  </section>
+
+  <section class="panel" aria-labelledby="covTitle">
+    <div class="panel-head"><div><h2 id="covTitle">What the future wind speed adds</h2><p class="muted">nMAE in setup B minus nMAE in setup A, for each model at each step, in percentage points of capacity. Below zero means knowing the wind over the next 4 hours helped.</p></div></div>
+    <div class="legend" id="covLegend"></div>
+    <div class="chartbox" id="covBox"><svg id="covChart" role="img" aria-label="Change in error from adding future wind speed"></svg><div class="tip" id="covTip" hidden></div></div>
+  </section>
+
+  <section class="panel" aria-labelledby="pairTitle">
+    <div class="panel-head"><div><h2 id="pairTitle">Are the differences real?</h2><p class="muted">nMAE of the row model minus the column model, in percentage points, all 16 steps pooled. Coloured cells are differences whose 95% interval (paired bootstrap over days, same days for both models) excludes zero; grey cells could be noise.</p></div></div>
+    <div class="key" id="pairKey"></div>
+    <div class="scroll"><table class="pm" id="pairTable"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="noisyTitle">
+    <div class="panel-head"><div><h2 id="noisyTitle">With a realistic wind forecast</h2><p class="muted">Setup B again, but the wind input is ERA5 degraded into something closer to an operational forecast. Per run, a timing error of up to ±1 h and a level bias (sd 10%) apply to the whole wind series the model sees, as they would when its past values come from the same forecast product. On top of that, an error drifts over the next 4 hours, starting from zero at the run time. The noise is identical for every model, and XGBoost is trained on equally noisy wind. (A first version degraded only the future part, which created an artificial jump at the run time that t0-alpha reacted to strongly; it was corrected before publishing.) The dots show each model's nMAE for A (past power only), B with noisy wind and B with ERA5.</p></div></div>
+    <div class="legend" id="noisyLegend"></div>
+    <div class="chartbox" id="noisyBox"><svg id="noisyChart" role="img" aria-label="nMAE with no wind, noisy wind and ERA5 wind"></svg></div>
+    <div class="scroll"><table id="noisyTable"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="tuneTitle">
+    <div class="panel-head"><div><h2 id="tuneTitle">How each model was tuned</h2><p class="muted">Every model got a validation budget on October–December 2014 (runs every 4 h); the 2015 test year was never used to choose anything. Foundation models chose their history length (512 / 1,024 / 2,048 / 4,096 blocks) and whether to receive time of day, which XGBoost always has, as a known-future input.</p></div></div>
+    <div class="scroll"><table id="tuneTable"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="dayTitle">
+    <div class="panel-head">
+      <div><h2 id="dayTitle">One day of real-time runs</h2><p class="muted" id="dayDesc"></p></div>
+      <div class="chips" id="dayChips" role="group" aria-label="Model shown"></div>
+    </div>
+    <div class="legend" id="dayLegend"></div>
+    <div class="chartbox" id="dayBox"><svg id="dayChart" role="img" aria-label="Actual output and forecast runs for one day"></svg><div class="tip" id="dayTip" hidden></div></div>
+  </section>
+
+  <section class="panel notes" aria-label="Method and caveats">
+    <section><h3>Setup</h3><ul id="setupList"></ul></section>
+    <section><h3>Caveats</h3><ul>
+      <li>Setup B's wind speed is ERA5 reanalysis (hourly, 100 m, interpolated to 15 min), which is closer to the truth than a real operational forecast, so B's gains are an optimistic upper bound. ERA5 correlates 0.80 with plant output, versus 0.91 for the turbines' own anemometers. It lines up best with power about 1 hour later; no timing correction was applied.</li>
+      <li>The power-curve baseline maps ERA5 wind speed to power deciles per 0.5 m/s bin, fitted on 2014 only.</li>
+      <li>XGBoost: one multi-quantile model shared across steps, predicting the change from the last observed block (so it is anchored to the latest actual value). Features: 16 power lags, rolling means and spread, time of day, and in B the ERA5 wind over the horizon. Its design was checked on a validation split inside 2014 (train Jan–Sep, validate Oct–Dec), never on the 2015 test year. It is trained on this plant; the foundation models are not. Its ms/run includes training time.</li>
+      <li>The data is from 2014–2015 and ships with NREL's OpenOA library, so it may be in some foundation models' pretraining data (t0-alpha does not disclose its training data). That would flatter the foundation models, not XGBoost. Only an unseen plant, such as your own, rules this out.</li>
+      <li>One plant and one test year, with runs always at 00/04/08/12/16/20 UTC: the ranking may not transfer to other sites or schedules.</li>
+      <li>TimesFM 3.0 weights are licensed for non-commercial use only; it is included here as a research reference, not a deployable option.</li>
+      <li>Gaps in the context (≤10% allowed) were linearly interpolated, and every model received identical inputs. Forecasts were clipped to [0, capacity].</li>
+    </ul></section>
+    <section><h3>Data & credits</h3><ul>
+      <li>ENGIE La Haute Borne (4 × Senvion MM82, 8.2 MW), Open Licence 2.0 (Etalab), via the <a href="https://github.com/NatLabRockies/OpenOA" target="_blank" rel="noopener">OpenOA</a> example data.</li>
+      <li>Models: t0-alpha (Apache-2.0), Chronos-2 (Apache-2.0), TimesFM 3.0 (TimesFM Non-Commercial License).</li>
+    </ul></section>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const COV = " + future wind";
+const FAMILIES = [
+  { id: "t0-alpha", label: "t0-alpha", color: "var(--s-t0)" },
+  { id: "chronos-2", label: "Chronos-2", color: "var(--s-ch)" },
+  { id: "timesfm-3.0", label: "TimesFM 3.0", color: "var(--s-tf)" },
+  { id: "xgboost", label: "XGBoost", color: "var(--s-lg)", trained: true },
+];
+// colour = model; line style = setup (solid: B + future wind, dashed: A past power only); baselines grey
+const MODELS = [
+  ...FAMILIES.flatMap(f => [
+    { id: f.id + COV, fam: f.id, label: f.label + COV, short: f.label + " B", color: f.color, dash: "", cls: "", variant: "cov" },
+    { id: f.id, fam: f.id, label: f.label, short: f.label + " A", color: f.color, dash: "6 4", cls: "dash", variant: "hist" },
+  ]),
+  { id: "power-curve", fam: "base", label: "Power curve (future wind)", short: "Power curve B", color: "var(--ink-2)", dash: "10 3 2 3", cls: "dashdot", variant: "cov" },
+  { id: "persistence", fam: "base", label: "Persistence", short: "Persistence A", color: "var(--s-pe)", dash: "1 4", cls: "dot", variant: "hist" },
+].filter(m => DATA.metrics.some(r => r.model === m.id));
+const VARIANTS = { both: "Both setups", hist: "A: past power", cov: "B: + future wind" };
+const PLANT_NAMES = { engie_lhb: "ENGIE La Haute Borne" };
+const METRICS = {
+  nMAE: { label: "nMAE", desc: "Mean absolute error of the median forecast, % of capacity. Lower is better.", unit: "%", lowerBetter: true },
+  nRMSE: { label: "nRMSE", desc: "Root-mean-square error, % of capacity. Penalises large misses (ramps). Lower is better.", unit: "%", lowerBetter: true },
+  skill_nMAE: { label: "Skill vs persistence", desc: "MAE reduction versus persistence at each step, %. Above 0 means the model beats holding the last value.", unit: "%", lowerBetter: false },
+  nCRPS: { label: "nCRPS", desc: "Probabilistic score from the 9 deciles, % of capacity. For persistence it equals nMAE. Lower is better.", unit: "%", lowerBetter: true },
+};
+const STEP_LABEL = s => { const m = s * 15; return m < 60 ? `${m} min` : (m % 60 ? `${Math.floor(m/60)} h ${m%60}` : `${m/60} h`); };
+const fmt = (v, d = 2) => (v == null || isNaN(v)) ? "–" : Number(v).toFixed(d);
+const ns = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+const SCORINGS = { all: "All blocks", available: "Excluding outages & curtailment" };
+const NOISY = " + noisy wind";
+const plants = Object.keys(DATA.plants);
+let state = { plant: store.get("wfb.plant") || plants[0], metric: store.get("wfb.metric") || "nMAE", variant: store.get("wfb.variant") || "both", scoring: store.get("wfb.scoring") || "all", dayModel: "t0-alpha" + COV };
+if (!plants.includes(state.plant)) state.plant = plants[0];
+if (!METRICS[state.metric]) state.metric = "nMAE";
+if (!SCORINGS[state.scoring]) state.scoring = "all";
+
+const rowsFor = (plant) => DATA.metrics.filter(r => r.plant === plant && r.scoring === state.scoring);
+function niceTicks(lo, hi, n = 5) {
+  const span = hi - lo || 1, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(x => x * mag).find(x => span / x <= n) || 10 * mag;
+  const out = []; for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(+v.toFixed(6));
+  return { ticks: out, lo: Math.min(lo, out[0]), hi: Math.max(hi, out[out.length - 1]) };
+}
+
+function renderSpec() {
+  const p = DATA.plants[state.plant];
+  const n = rowsFor(state.plant).find(r => r.step === 0 && r.model === "persistence").n / 16;
+  document.getElementById("spec").innerHTML = [
+    "run every 4 h", "16 steps × 15 min", "A: past power", "B: past power + future wind", "history length tuned per model", `${n.toLocaleString()} runs`, "device: Apple M5 (MPS)"
+  ].map(s => `<span>${s}</span>`).join("");
+  document.getElementById("setupList").innerHTML = [
+    `Forecast origins at 00, 04, 08, 12, 16 and 20 UTC throughout the test year.`,
+    `Test year: ${DATA.plants.engie_lhb.test_start} → ${DATA.plants.engie_lhb.test_end} (end date exclusive); each run sees only data up to its issue time.`,
+    `10-minute plant output averaged to 15-minute blocks; a run is skipped if its target window has any gap.`,
+    `Metrics use the median (q0.5) as the point forecast; the 80% band is q0.1–q0.9.`,
+    `"Excluding outages & curtailment" drops the ${fmt(DATA.excluded_pct[state.plant], 1)}% of target blocks where the plant reported turbine unavailability or curtailment above 1% of capacity. Most large misses remain, because they are real weather ramps (gust fronts, storms), not outages.`,
+  ].map(s => `<li>${s}</li>`).join("");
+}
+
+function renderPlantSeg() {
+  const seg = document.getElementById("plantSeg");
+  seg.innerHTML = "";
+  plants.forEach(p => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "plant-" + p;
+    b.textContent = PLANT_NAMES[p];
+    b.setAttribute("aria-pressed", p === state.plant);
+    b.onclick = () => { state.plant = p; store.set("wfb.plant", p); renderAll(); };
+    seg.appendChild(b);
+  });
+  const cfg = DATA.plants[state.plant];
+  const sseg = document.getElementById("scoringSeg");
+  sseg.innerHTML = "";
+  Object.entries(SCORINGS).forEach(([k, lab]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "scoring-" + k; b.textContent = lab;
+    b.setAttribute("aria-pressed", k === state.scoring);
+    b.onclick = () => { state.scoring = k; store.set("wfb.scoring", k); renderAll(); };
+    sseg.appendChild(b);
+  });
+  document.getElementById("plantMeta").textContent = `${cfg.capacity} MW · test ${cfg.test_start} → ${cfg.test_end}`;
+  seg.hidden = plants.length < 2;
+}
+
+function renderSummary() {
+  const rows = rowsFor(state.plant).filter(r => r.step === 0);
+  const ci = DATA.skill_ci[state.plant][state.scoring];
+  const timing = DATA.timing.filter(t => t.plant === state.plant);
+  const byId = Object.fromEntries(rows.map(r => [r.model, r]));
+  const fm = MODELS.filter(m => m.id !== "persistence");
+  const best = (key, low = true) => fm.reduce((a, m) => (low ? byId[m.id][key] < byId[a.id][key] : byId[m.id][key] > byId[a.id][key]) ? m : a, fm[0]).id;
+  const bMAE = best("nMAE"), bCRPS = best("nCRPS");
+  // forest-plot scale shared by all rows
+  const lo = Math.min(0, ...fm.map(m => ci[m.id].lo)), hi = Math.max(...fm.map(m => ci[m.id].hi));
+  const x = v => 6 + (v - lo) / (hi - lo) * 148;
+  const forest = (m) => {
+    const c = ci[m.id];
+    return `<svg class="forest" viewBox="0 0 160 22" aria-hidden="true">
+      <line x1="${x(0)}" x2="${x(0)}" y1="2" y2="20" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 2"/>
+      <line x1="${x(c.lo)}" x2="${x(c.hi)}" y1="11" y2="11" stroke="${m.color}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="${x(c.skill)}" cy="11" r="4.5" fill="${m.color}" stroke="var(--surface)" stroke-width="2"/></svg>`;
+  };
+  let html = `<thead><tr><th>Setup · model</th><th>nMAE %</th><th>nRMSE %</th><th>Skill vs persistence</th><th>95% interval</th><th></th><th>nCRPS %</th><th>80% band hits</th><th>Bias %</th><th>ms / run</th></tr></thead><tbody>`;
+  const groups = [["hist", "A · past power only"], ["cov", "B · past power + future wind"]];
+  groups.forEach(([v, title]) => {
+  html += `<tr><td colspan="10" style="font:600 12px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding-top:16px">${title}</td></tr>`;
+  MODELS.filter(m => m.variant === v).sort((a, b) => byId[a.id].nMAE - byId[b.id].nMAE).forEach(m => {
+    const r = byId[m.id], t = timing.find(t => t.model === m.id);
+    const c = ci[m.id];
+    html += `<tr><td class="model"><span class="sw ${m.cls}" style="color:${m.color}"></span>${m.label}</td>
+      <td class="${m.id === bMAE ? "best" : ""}">${fmt(r.nMAE)}</td><td>${fmt(r.nRMSE)}</td>
+      <td>${c ? (c.skill >= 0 ? "+" : "") + fmt(c.skill, 1) + "%" : "baseline"}</td>
+      <td>${c ? `${fmt(c.lo, 1)} to ${fmt(c.hi, 1)}` : ""}</td><td>${c ? forest(m) : ""}</td>
+      <td class="${m.id === bCRPS ? "best" : ""}">${fmt(r.nCRPS)}</td>
+      <td>${m.id === "persistence" ? "n/a" : fmt(r.cov80, 1) + "%"}</td><td>${fmt(r.nBias)}</td>
+      <td>${m.id === "persistence" ? "–" : fmt(t.per_forecast_ms, 1)}</td></tr>`;
+  });
+  });
+  document.getElementById("sumTable").innerHTML = html + "</tbody>";
+
+  const bestIn = v => MODELS.filter(m => m.variant === v && m.fam !== "base" && m.fam !== "xgboost").sort((a, b) => byId[a.id].nMAE - byId[b.id].nMAE)[0];
+  const bA = bestIn("hist"), bB = bestIn("cov");
+  const s16 = rowsFor(state.plant).filter(r => r.step === 16);
+  const at16 = id => s16.find(r => r.model === id).nMAE;
+  document.getElementById("verdict").innerHTML = `
+    <div><span class="k">Best foundation model in A · past power</span><span class="v">${bA.label}</span><span class="muted num" style="font-size:13px">${fmt(byId[bA.id].nMAE)}% nMAE · XGBoost ${fmt(byId["xgboost"].nMAE)}% · persistence ${fmt(byId["persistence"].nMAE)}%</span></div>
+    <div><span class="k">Best foundation model in B · + future wind</span><span class="v">${bB.label}</span><span class="muted num" style="font-size:13px">${fmt(byId[bB.id].nMAE)}% nMAE · XGBoost ${fmt(byId["xgboost" + COV].nMAE)}% · power curve ${fmt(byId["power-curve"].nMAE)}%</span></div>
+    <div><span class="k">nMAE gain from future wind (pts)</span><span class="v num">${FAMILIES.map(f => fmt(byId[f.id].nMAE - byId[f.id + COV].nMAE, 2)).join(" / ")}</span><span class="muted" style="font-size:13px">${FAMILIES.map(f => f.label).join(" / ")}</span></div>
+    <div><span class="k">At 4 h ahead (step 16)</span><span class="v num">${fmt(at16(bB.id))}% vs ${fmt(at16(bA.id))}%</span><span class="muted" style="font-size:13px">best foundation model, B vs A · persistence ${fmt(at16("persistence"))}%</span></div>`;
+}
+
+function legend(target, models) {
+  document.getElementById(target).innerHTML = models.map(m =>
+    `<span><span class="sw ${m.cls}" style="color:${m.color}"></span>${m.label}</span>`).join("");
+}
+
+function renderMetricSeg() {
+  const seg = document.getElementById("metricSeg");
+  seg.innerHTML = "";
+  Object.entries(METRICS).forEach(([k, m]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "metric-" + k; b.textContent = m.label;
+    b.setAttribute("aria-pressed", k === state.metric);
+    b.onclick = () => { state.metric = k; store.set("wfb.metric", k); renderMetricSeg(); renderStep(); };
+    seg.appendChild(b);
+  });
+  document.getElementById("metricDesc").textContent = METRICS[state.metric].desc;
+  const vseg = document.getElementById("variantSeg");
+  vseg.innerHTML = "";
+  Object.entries(VARIANTS).forEach(([k, lab]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "variant-" + k; b.textContent = lab;
+    b.setAttribute("aria-pressed", k === state.variant);
+    b.onclick = () => { state.variant = k; store.set("wfb.variant", k); renderMetricSeg(); renderStep(); };
+    vseg.appendChild(b);
+  });
+
+}
+
+function renderStep() {
+  const key = state.metric, meta = METRICS[key];
+  const models = MODELS.filter(m => (key !== "skill_nMAE" || m.id !== "persistence") && (state.variant === "both" || m.variant === state.variant));
+  legend("stepLegend", models);
+  const rows = rowsFor(state.plant).filter(r => r.step > 0);
+  const series = models.map(m => ({ m, pts: rows.filter(r => r.model === m.id).sort((a, b) => a.step - b.step).map(r => [r.step, r[key]]) }));
+  const vals = series.flatMap(s => s.pts.map(p => p[1]));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (key === "skill_nMAE") { lo = Math.min(lo, 0); } else { lo = Math.max(0, lo - (hi - lo) * 0.08); }
+  const { ticks, lo: ylo, hi: yhi } = niceTicks(lo, hi + (hi - lo) * 0.04, 5);
+
+  const svg = document.getElementById("stepChart");
+  svg.innerHTML = "";
+  const W = 980, H = 400, M = { l: 52, r: 150, t: 12, b: 48 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const X = s => M.l + (s - 1) / 15 * (W - M.l - M.r), Y = v => M.t + (yhi - v) / (yhi - ylo) * (H - M.t - M.b);
+  ticks.forEach(t => {
+    el("line", { x1: M.l, x2: W - M.r, y1: Y(t), y2: Y(t), stroke: t === 0 && key === "skill_nMAE" ? "var(--ink-3)" : "var(--grid)", "stroke-width": 1 }, svg);
+    el("text", { x: M.l - 8, y: Y(t) + 4, "text-anchor": "end" }, svg).textContent = t + (meta.unit === "%" ? "" : "");
+  });
+  [1, 2, 4, 8, 12, 16].forEach(s => {
+    el("text", { x: X(s), y: H - M.b + 20, "text-anchor": "middle" }, svg).textContent = STEP_LABEL(s);
+  });
+  el("text", { x: M.l + (W - M.l - M.r) / 2, y: H - 6, "text-anchor": "middle", class: "axis-title" }, svg).textContent = "Lead time (forecast step)";
+  const yt = el("text", { x: 14, y: M.t + (H - M.t - M.b) / 2, "text-anchor": "middle", class: "axis-title", transform: `rotate(-90 14 ${M.t + (H - M.t - M.b) / 2})` }, svg);
+  yt.textContent = meta.label + " (%)";
+
+  const ends = [];
+  series.forEach(({ m, pts }) => {
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("");
+    el("path", { d, fill: "none", stroke: m.color, "stroke-width": 2, "stroke-dasharray": m.dash, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    const last = pts[pts.length - 1];
+    el("circle", { cx: X(last[0]), cy: Y(last[1]), r: 4, fill: m.color, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    ends.push({ m, y: Y(last[1]), v: last[1] });
+  });
+  // direct labels at the right edge, de-collided
+  ends.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 15) ends[i].y = ends[i - 1].y + 15;
+  ends.forEach(e => {
+    const t = el("text", { x: W - M.r + 10, y: e.y + 4 }, svg);
+    t.textContent = `${e.m.short} ${fmt(e.v, 2)}`;
+    t.style.fill = "var(--ink-2)";
+  });
+
+  // hover layer
+  const cross = el("line", { y1: M.t, y2: H - M.b, stroke: "var(--ink-3)", "stroke-width": 1, visibility: "hidden" }, svg);
+  const hit = el("rect", { x: M.l - 10, y: M.t, width: W - M.l - M.r + 20, height: H - M.t - M.b, fill: "transparent" }, svg);
+  const tip = document.getElementById("stepTip"), box = document.getElementById("stepBox");
+  const move = (ev) => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W;
+    const s = Math.max(1, Math.min(16, Math.round((px - M.l) / (W - M.l - M.r) * 15 + 1)));
+    cross.setAttribute("x1", X(s)); cross.setAttribute("x2", X(s)); cross.setAttribute("visibility", "visible");
+    const items = series.map(({ m, pts }) => ({ m, v: pts.find(p => p[0] === s)[1] })).sort((a, b) => meta.lowerBetter ? a.v - b.v : b.v - a.v);
+    tip.innerHTML = `<div class="h">Step ${s} · ${STEP_LABEL(s)} ahead</div>` + items.map(i => `<div class="row"><span><span class="sw ${i.m.cls}" style="color:${i.m.color};width:12px"></span>${i.m.label}</span><span>${fmt(i.v)}</span></div>`).join("");
+    tip.hidden = false;
+    const bx = box.getBoundingClientRect(), left = ev.clientX - bx.left + 14;
+    tip.style.left = Math.min(left, bx.width - tip.offsetWidth - 4) + "px";
+    tip.style.top = Math.max(0, ev.clientY - bx.top - tip.offsetHeight - 10) + "px";
+  };
+  hit.addEventListener("pointermove", move);
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+
+  // table view
+  const all = MODELS;
+  let th = `<thead><tr><th>Model</th>${Array.from({ length: 16 }, (_, i) => `<th>${STEP_LABEL(i + 1)}</th>`).join("")}</tr></thead><tbody>`;
+  all.forEach(m => {
+    const pts = rows.filter(r => r.model === m.id).sort((a, b) => a.step - b.step);
+    th += `<tr><td class="model"><span class="sw ${m.cls}" style="color:${m.color}"></span>${m.label}</td>${pts.map(r => `<td>${fmt(r[key])}</td>`).join("")}</tr>`;
+  });
+  document.getElementById("stepTable").innerHTML = th + "</tbody>";
+}
+
+function renderDayChips() {
+  const box = document.getElementById("dayChips");
+  box.innerHTML = "";
+  MODELS.filter(m => m.fam !== "base").forEach(m => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chipbtn"; b.id = "day-" + m.id.replace(/\W+/g, "-");
+    b.innerHTML = `<span class="sw ${m.cls}" style="color:${m.color};width:12px"></span>${m.label}`;
+    b.setAttribute("aria-pressed", m.id === state.dayModel);
+    b.onclick = () => { state.dayModel = m.id; renderDayChips(); renderDay(); };
+    box.appendChild(b);
+  });
+}
+
+function renderDay() {
+  const ex = DATA.examples[state.plant], cap = DATA.plants[state.plant].capacity;
+  const m = MODELS.find(x => x.id === state.dayModel), pm = MODELS.find(x => x.id === "persistence");
+  document.getElementById("dayDesc").textContent = `${ex.day} (UTC), the test day with the largest swings. Each segment is one run issued at the tick mark, drawn from the last observed block (open circle) it was given; the shaded band is that run's 80% interval. The 6 hours before midnight show the history leading in.`;
+  document.getElementById("dayLegend").innerHTML =
+    `<span><span class="sw" style="color:var(--ink)"></span>Actual output</span>` +
+    `<span><span class="sw ${m.cls}" style="color:${m.color}"></span>${m.label} median</span>` +
+    `<span><span class="sw" style="color:${m.color};opacity:.35;border-top-width:8px"></span>80% band</span>` +
+    `<span><span class="sw dot" style="color:${pm.color}"></span>Persistence</span>`;
+  const svg = document.getElementById("dayChart");
+  svg.innerHTML = "";
+  const W = 980, H = 360, M = { l: 52, r: 16, t: 12, b: 44 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const act = ex.actual.map(([t, v]) => [new Date(t + "Z").getTime(), v]);
+  const t0 = act[0][0], t1 = new Date(ex.day + "T23:45:00Z").getTime();
+  const X = t => M.l + (t - t0) / (t1 - t0) * (W - M.l - M.r);
+  const { ticks, lo: ylo, hi: yhi } = niceTicks(0, cap, 5);
+  const Y = v => M.t + (yhi - v) / (yhi - ylo) * (H - M.t - M.b);
+  ticks.forEach(t => {
+    el("line", { x1: M.l, x2: W - M.r, y1: Y(t), y2: Y(t), stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    el("text", { x: M.l - 8, y: Y(t) + 4, "text-anchor": "end" }, svg).textContent = t;
+  });
+  const yt = el("text", { x: 14, y: M.t + (H - M.t - M.b) / 2, "text-anchor": "middle", class: "axis-title", transform: `rotate(-90 14 ${M.t + (H - M.t - M.b) / 2})` }, svg);
+  yt.textContent = "Output (MW)";
+  const dayStart = new Date(ex.day + "T00:00:00Z").getTime();
+  for (let h = -6; h <= 24; h += 2) {
+    const t = dayStart + h * 3600e3; if (t < t0 || t > t1 + 15 * 60e3) continue;
+    const isRun = h >= 0 && h % 4 === 0 && h < 24;
+    el("line", { x1: X(t), x2: X(t), y1: H - M.b, y2: H - M.b + (isRun ? 7 : 4), stroke: isRun ? "var(--ink-2)" : "var(--ink-3)", "stroke-width": isRun ? 1.5 : 1 }, svg);
+    const lbl = h < 0 ? `${24 + h}:00` : `${String(h % 24).padStart(2, "0")}:00`;
+    el("text", { x: X(t), y: H - M.b + 22, "text-anchor": "middle" }, svg).textContent = h === 24 ? "24:00" : lbl;
+  }
+  el("line", { x1: X(dayStart), x2: X(dayStart), y1: M.t, y2: H - M.b, stroke: "var(--rule)", "stroke-width": 1, "stroke-dasharray": "3 3" }, svg);
+  const runs = ex.runs[m.id], pruns = ex.runs["persistence"];
+  const actAt = new Map(act.map(p => [p[0], p[1]]));
+  const anchor = g => { const t = new Date(g[0][0] + "Z").getTime() - 900e3; return actAt.has(t) ? [t, actAt.get(t)] : null; };
+  const groups = {};
+  runs.forEach(r => { (groups[r[1]] ||= []).push(r); });
+  Object.values(groups).forEach(g => {
+    const pts = g.map(r => [new Date(r[0] + "Z").getTime(), r[2], r[3], r[4]]);
+    const a0 = anchor(g); if (a0) pts.unshift([a0[0], a0[1], a0[1], a0[1]]);
+    const area = pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[3]).toFixed(1)}`).join("") +
+      pts.slice().reverse().map(p => `L${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("") + "Z";
+    el("path", { d: area, fill: m.color, "fill-opacity": 0.18, stroke: "none" }, svg);
+  });
+  const pg = {};
+  pruns.forEach(r => { (pg[r[1]] ||= []).push(r); });
+  Object.values(pg).forEach(g => {
+    const d = g.map((r, i) => `${i ? "L" : "M"}${X(new Date(r[0] + "Z").getTime()).toFixed(1)},${Y(r[3]).toFixed(1)}`).join("");
+    el("path", { d, fill: "none", stroke: pm.color, "stroke-width": 1.5, "stroke-dasharray": "1 4", "stroke-linecap": "round" }, svg);
+  });
+  const dA = act.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("");
+  el("path", { d: dA, fill: "none", stroke: "var(--ink)", "stroke-width": 2, "stroke-linejoin": "round" }, svg);
+  Object.values(groups).forEach(g => {
+    const a0 = anchor(g);
+    const d = (a0 ? `M${X(a0[0]).toFixed(1)},${Y(a0[1]).toFixed(1)}` : "") + g.map((r, i) => `${i || !a0 ? (i ? "L" : "M") : "L"}${X(new Date(r[0] + "Z").getTime()).toFixed(1)},${Y(r[3]).toFixed(1)}`).join("");
+    el("path", { d, fill: "none", stroke: m.color, "stroke-width": 2, "stroke-dasharray": m.dash, "stroke-linejoin": "round" }, svg);
+    if (a0) el("circle", { cx: X(a0[0]), cy: Y(a0[1]), r: 3.5, fill: "var(--surface)", stroke: m.color, "stroke-width": 2 }, svg);
+  });
+
+  const cross = el("line", { y1: M.t, y2: H - M.b, stroke: "var(--ink-3)", "stroke-width": 1, visibility: "hidden" }, svg);
+  const hit = el("rect", { x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: "transparent" }, svg);
+  const tip = document.getElementById("dayTip"), box = document.getElementById("dayBox");
+  const actMap = new Map(act.map(p => [p[0], p[1]]));
+  const runMap = new Map(runs.map(r => [new Date(r[0] + "Z").getTime(), r]));
+  const perMap = new Map(pruns.map(r => [new Date(r[0] + "Z").getTime(), r]));
+  hit.addEventListener("pointermove", ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W;
+    let t = t0 + (px - M.l) / (W - M.l - M.r) * (t1 - t0);
+    t = Math.round(t / 900e3) * 900e3; t = Math.max(t0, Math.min(t1, t));
+    cross.setAttribute("x1", X(t)); cross.setAttribute("x2", X(t)); cross.setAttribute("visibility", "visible");
+    const d = new Date(t), hh = String(d.getUTCHours()).padStart(2, "0"), mm = String(d.getUTCMinutes()).padStart(2, "0");
+    const rr = runMap.get(t), pr = perMap.get(t);
+    tip.innerHTML = `<div class="h">${hh}:${mm} UTC${rr ? ` · run from ${rr[1]}` : ""}</div>` +
+      `<div class="row"><span>Actual</span><span>${actMap.has(t) ? fmt(actMap.get(t)) : "–"} MW</span></div>` +
+      (rr ? `<div class="row"><span>${m.label}</span><span>${fmt(rr[3])} MW</span></div><div class="row"><span>80% band</span><span>${fmt(rr[2])}–${fmt(rr[4])}</span></div>` : "") +
+      (pr ? `<div class="row"><span>Persistence</span><span>${fmt(pr[3])} MW</span></div>` : "");
+    tip.hidden = false;
+    const bx = box.getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX - bx.left + 14, bx.width - tip.offsetWidth - 4) + "px";
+    tip.style.top = Math.max(0, ev.clientY - bx.top - tip.offsetHeight - 10) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+}
+
+function renderCov() {
+  const rows = rowsFor(state.plant).filter(r => r.step > 0);
+  const fams = FAMILIES.filter(f => rows.some(r => r.model === f.id + COV));
+  document.getElementById("covLegend").innerHTML = fams.map(f => `<span><span class="sw" style="color:${f.color}"></span>${f.label}</span>`).join("");
+  const get = (id, s) => rows.find(r => r.model === id && r.step === s).nMAE;
+  const series = fams.map(f => ({ f, pts: Array.from({ length: 16 }, (_, i) => [i + 1, get(f.id + COV, i + 1) - get(f.id, i + 1)]) }));
+  const vals = series.flatMap(s => s.pts.map(p => p[1]));
+  const lo = Math.min(0, ...vals), hi = Math.max(0, ...vals), pad = (hi - lo) * 0.08 || 0.1;
+  const { ticks, lo: ylo, hi: yhi } = niceTicks(lo - pad, hi + pad, 5);
+  const svg = document.getElementById("covChart");
+  svg.innerHTML = "";
+  const W = 980, H = 320, M = { l: 52, r: 150, t: 12, b: 48 };
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const X = s => M.l + (s - 1) / 15 * (W - M.l - M.r), Y = v => M.t + (yhi - v) / (yhi - ylo) * (H - M.t - M.b);
+  ticks.forEach(t => {
+    el("line", { x1: M.l, x2: W - M.r, y1: Y(t), y2: Y(t), stroke: Math.abs(t) < 1e-9 ? "var(--ink-3)" : "var(--grid)", "stroke-width": 1 }, svg);
+    el("text", { x: M.l - 8, y: Y(t) + 4, "text-anchor": "end" }, svg).textContent = (t > 0 ? "+" : "") + t;
+  });
+  [1, 2, 4, 8, 12, 16].forEach(s => { el("text", { x: X(s), y: H - M.b + 20, "text-anchor": "middle" }, svg).textContent = STEP_LABEL(s); });
+  el("text", { x: M.l + (W - M.l - M.r) / 2, y: H - 6, "text-anchor": "middle", class: "axis-title" }, svg).textContent = "Lead time (forecast step)";
+  const yc = M.t + (H - M.t - M.b) / 2;
+  el("text", { x: 14, y: yc, "text-anchor": "middle", class: "axis-title", transform: `rotate(-90 14 ${yc})` }, svg).textContent = "Δ nMAE, B − A (pts)";
+  const ends = [];
+  series.forEach(({ f, pts }) => {
+    el("path", { d: pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(""), fill: "none", stroke: f.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+    el("circle", { cx: X(16), cy: Y(pts[15][1]), r: 4, fill: f.color, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+    ends.push({ f, y: Y(pts[15][1]), v: pts[15][1] });
+  });
+  ends.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 15) ends[i].y = ends[i - 1].y + 15;
+  ends.forEach(e => { const t = el("text", { x: W - M.r + 10, y: e.y + 4 }, svg); t.textContent = `${e.f.label} ${e.v > 0 ? "+" : ""}${fmt(e.v, 2)}`; t.style.fill = "var(--ink-2)"; });
+  const cross = el("line", { y1: M.t, y2: H - M.b, stroke: "var(--ink-3)", "stroke-width": 1, visibility: "hidden" }, svg);
+  const hit = el("rect", { x: M.l - 10, y: M.t, width: W - M.l - M.r + 20, height: H - M.t - M.b, fill: "transparent" }, svg);
+  const tip = document.getElementById("covTip"), box = document.getElementById("covBox");
+  hit.addEventListener("pointermove", ev => {
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) / r.width * W;
+    const s = Math.max(1, Math.min(16, Math.round((px - M.l) / (W - M.l - M.r) * 15 + 1)));
+    cross.setAttribute("x1", X(s)); cross.setAttribute("x2", X(s)); cross.setAttribute("visibility", "visible");
+    tip.innerHTML = `<div class="h">Step ${s} · ${STEP_LABEL(s)} ahead · A → B</div>` + fams.map(f =>
+      `<div class="row"><span><span class="sw" style="color:${f.color};width:12px"></span>${f.label}</span><span>${fmt(get(f.id, s))} → ${fmt(get(f.id + COV, s))}</span></div>`).join("");
+    tip.hidden = false;
+    const bx = box.getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX - bx.left + 14, bx.width - tip.offsetWidth - 4) + "px";
+    tip.style.top = Math.max(0, ev.clientY - bx.top - tip.offsetHeight - 10) + "px";
+  });
+  hit.addEventListener("pointerleave", () => { tip.hidden = true; cross.setAttribute("visibility", "hidden"); });
+}
+
+const labelOf = id => {
+  const base = id.replace(NOISY, "").replace(COV, "");
+  const fam = FAMILIES.find(f => f.id === base);
+  const name = fam ? fam.label : (base === "power-curve" ? "Power curve" : "Persistence");
+  return name + (id.endsWith(NOISY) ? " + noisy wind" : id.endsWith(COV) || base === "power-curve" ? " (B)" : fam || base === "persistence" ? " (A)" : "");
+};
+
+function renderPairs() {
+  const P = DATA.pairwise[state.plant][state.scoring];
+  const keep = P.models.map((m, i) => [m, i]).filter(([m]) => !m.endsWith(NOISY));
+  const maxAbs = Math.max(...keep.flatMap(([, i]) => keep.map(([, j]) => Math.abs(P.diff[i][j]))));
+  let html = `<thead><tr><th></th>${keep.map(([m]) => `<th class="colh">${labelOf(m)}</th>`).join("")}</tr></thead><tbody>`;
+  keep.forEach(([a, i]) => {
+    html += `<tr><th class="rowh">${labelOf(a)}</th>`;
+    keep.forEach(([b, j]) => {
+      if (i === j) { html += `<td class="diag"></td>`; return; }
+      const d = P.diff[i][j], sig = P.lo[i][j] > 0 || P.hi[i][j] < 0;
+      const title = `${labelOf(a)} − ${labelOf(b)}: ${fmt(d)} pts (95% CI ${fmt(P.lo[i][j])} to ${fmt(P.hi[i][j])})`;
+      if (!sig) { html += `<td class="ns" title="${title}">${d > 0 ? "+" : ""}${fmt(d)}</td>`; return; }
+      const pct = Math.round(18 + 62 * Math.min(1, Math.abs(d) / maxAbs));
+      const col = d < 0 ? "var(--div-neg)" : "var(--div-pos)";
+      const ink = pct > 55 ? "#fff" : "var(--ink)";
+      html += `<td title="${title}" style="background:color-mix(in oklab, ${col} ${pct}%, var(--surface));color:${ink}">${d > 0 ? "+" : ""}${fmt(d)}</td>`;
+    });
+    html += "</tr>";
+  });
+  document.getElementById("pairTable").innerHTML = html + "</tbody>";
+  document.getElementById("pairKey").innerHTML =
+    `<span><i style="background:color-mix(in oklab, var(--div-neg) 70%, var(--surface))"></i>row model significantly better</span>` +
+    `<span><i style="background:color-mix(in oklab, var(--div-pos) 70%, var(--surface))"></i>row model significantly worse</span>` +
+    `<span><i style="background:var(--grid)"></i>not significant</span>`;
+}
+
+function renderNoisy() {
+  const rows = rowsFor(state.plant).filter(r => r.step === 0);
+  const v = id => (rows.find(r => r.model === id) || {}).nMAE;
+  const items = [...FAMILIES.map(f => ({ label: f.label, color: f.color, a: v(f.id), n: v(f.id + NOISY), e: v(f.id + COV) })),
+    { label: "Power curve", color: "var(--ink-2)", a: null, n: v("power-curve" + NOISY), e: v("power-curve") }].filter(x => x.e != null);
+  const pers = v("persistence");
+  const all = items.flatMap(x => [x.a, x.n, x.e]).concat([pers]).filter(x => x != null);
+  const { ticks, lo, hi } = niceTicks(Math.min(...all) - 0.2, Math.max(...all) + 0.2, 6);
+  const svg = document.getElementById("noisyChart");
+  svg.innerHTML = "";
+  const W = 980, rowH = 40, M = { l: 130, r: 24, t: 10, b: 44 }, H = M.t + M.b + rowH * items.length;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const X = x => M.l + (x - lo) / (hi - lo) * (W - M.l - M.r);
+  ticks.forEach(t => {
+    el("line", { x1: X(t), x2: X(t), y1: M.t, y2: H - M.b, stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    el("text", { x: X(t), y: H - M.b + 18, "text-anchor": "middle" }, svg).textContent = t;
+  });
+  el("line", { x1: X(pers), x2: X(pers), y1: M.t, y2: H - M.b, stroke: "var(--s-pe)", "stroke-width": 1.5, "stroke-dasharray": "1 4", "stroke-linecap": "round" }, svg);
+  el("text", { x: X(pers) + 6, y: M.t + 10 }, svg).textContent = `persistence ${fmt(pers)}`;
+  el("text", { x: M.l + (W - M.l - M.r) / 2, y: H - 6, "text-anchor": "middle", class: "axis-title" }, svg).textContent = "nMAE (% of capacity), all steps · lower is better";
+  items.forEach((x, k) => {
+    const y = M.t + rowH * k + rowH / 2;
+    const t = el("text", { x: M.l - 12, y: y + 4, "text-anchor": "end" }, svg); t.textContent = x.label; t.style.fill = "var(--ink-2)";
+    const pts = [x.a, x.n, x.e].filter(p => p != null);
+    el("line", { x1: X(Math.min(...pts)), x2: X(Math.max(...pts)), y1: y, y2: y, stroke: x.color, "stroke-width": 2, "stroke-opacity": 0.45 }, svg);
+    if (x.a != null) el("circle", { cx: X(x.a), cy: y, r: 5.5, fill: "var(--surface)", stroke: x.color, "stroke-width": 2 }, svg);
+    if (x.n != null) el("rect", { x: X(x.n) - 5, y: y - 5, width: 10, height: 10, fill: x.color, "fill-opacity": 0.45, stroke: x.color, "stroke-width": 2 }, svg);
+    el("circle", { cx: X(x.e), cy: y, r: 5.5, fill: x.color, stroke: "var(--surface)", "stroke-width": 2 }, svg);
+  });
+  document.getElementById("noisyLegend").innerHTML =
+    `<span><svg width="16" height="14" style="width:16px;margin-right:6px"><circle cx="8" cy="7" r="5" fill="none" stroke="var(--ink-2)" stroke-width="2"/></svg>A: past power only</span>` +
+    `<span><svg width="16" height="14" style="width:16px;margin-right:6px"><rect x="3" y="2" width="10" height="10" fill="var(--ink-2)" fill-opacity=".45" stroke="var(--ink-2)" stroke-width="2"/></svg>B with noisy wind</span>` +
+    `<span><svg width="16" height="14" style="width:16px;margin-right:6px"><circle cx="8" cy="7" r="5" fill="var(--ink-2)"/></svg>B with ERA5 wind</span>`;
+  const rank = arr => arr.slice().sort((p, q) => p.v - q.v).map(r => r.label);
+  const rE = rank(items.map(x => ({ label: x.label, v: x.e }))), rN = rank(items.map(x => ({ label: x.label, v: x.n })));
+  let html = `<thead><tr><th>Model</th><th>A: past power</th><th>B: noisy wind</th><th>B: ERA5 wind</th><th>Gain kept with noisy wind</th><th>Rank ERA5 → noisy</th></tr></thead><tbody>`;
+  items.forEach(x => {
+    const kept = x.a != null ? `${fmt(100 * (x.a - x.n) / (x.a - x.e), 0)}%` : "–";
+    html += `<tr><td class="model"><span class="sw" style="color:${x.color}"></span>${x.label}</td><td>${fmt(x.a)}</td><td>${fmt(x.n)}</td><td>${fmt(x.e)}</td><td>${kept}</td><td>${rE.indexOf(x.label) + 1} → ${rN.indexOf(x.label) + 1}</td></tr>`;
+  });
+  document.getElementById("noisyTable").innerHTML = html + "</tbody>";
+}
+
+function renderTuning() {
+  const T = DATA.tuning || {};
+  const grid = DATA.tuning_grid || [];
+  let html = `<thead><tr><th>Model</th><th>Setup</th><th>History length</th><th>Time of day</th><th>Validation nMAE</th><th>Default (2,048, no time) nMAE</th></tr></thead><tbody>`;
+  FAMILIES.filter(f => T[f.id]).forEach(f => ["A", "B"].forEach(s => {
+    const c = T[f.id][s], d = grid.find(g => g.model === f.id && g.setup === s && g.context === 2048 && !g.calendar);
+    html += `<tr><td class="model"><span class="sw" style="color:${f.color}"></span>${f.label}</td><td>${s === "A" ? "A · past power" : "B · + future wind"}</td><td>${c.context.toLocaleString()} blocks (${fmt(c.context / 96, 0)} days)</td><td>${c.calendar ? "yes" : "no"}</td><td>${fmt(c.nMAE, 3)}</td><td>${d ? fmt(d.nMAE, 3) : "–"}</td></tr>`;
+  }));
+  html += `<tr><td class="model"><span class="sw" style="color:var(--s-lg)"></span>XGBoost</td><td>A and B</td><td>last 24 h of features</td><td>yes</td><td colspan="2" style="text-align:left;font-family:var(--font)">design chosen on the same split: change-from-last target, no day-of-year</td></tr>`;
+  document.getElementById("tuneTable").innerHTML = html + "</tbody>";
+}
+
+function renderAll() { renderPlantSeg(); renderSpec(); renderSummary(); renderMetricSeg(); renderStep(); renderCov(); renderPairs(); renderNoisy(); renderTuning(); renderDayChips(); renderDay(); }
+renderAll();
+</script>
